@@ -20,7 +20,7 @@ from fedlab.utils.functional import evaluate
 from fedlab.utils.functional import get_best_gpu, load_dict
 
 sys.path.append("../../../")
-from models.cnn import CNN_Mnist
+from models.cnn import CNN_MNIST
 
 
 def write_file(acc, loss, config, round):
@@ -70,7 +70,7 @@ test_loader = torch.utils.data.DataLoader(testset,
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 gpu = get_best_gpu()
-model = CNN_Mnist().cuda(gpu)
+model = CNN_MNIST().cuda(gpu)
 
 # FL settings
 num_per_round = int(args.total_client * args.sample_ratio)

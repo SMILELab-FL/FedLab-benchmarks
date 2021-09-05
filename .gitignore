@@ -148,7 +148,7 @@ dmypy.json
 cython_debug/
 
 # dataset
-fedlab_benchmarks/algorithm/fedavg/scale/shakespeare-rnn/pkl_dataset/*
+fedlab_benchmarks/fedavg/scale/shakespeare-rnn/pkl_dataset/*
 
 fedlab_benchmarks/datasets/data/mnist/*
 !fedlab_benchmarks/datasets/data/mnist/*.py
@@ -163,9 +163,9 @@ fedlab_benchmarks/datasets/data/*/meta
 actions-runner
 
 # tests
-fedlab_benchmarks/algorithm/fedavg/standalone/*.txt
-fedlab_benchmarks/algorithm/fedavg/standalone/*.ipynb
-fedlab_benchmarks/algorithm/fedavg/standalone/*.sh
+fedlab_benchmarks/fedavg/standalone/*.txt
+fedlab_benchmarks/fedavg/standalone/*.ipynb
+fedlab_benchmarks/fedavg/standalone/*.sh
 
 # recoder
 *.txt

@@ -1,5 +1,6 @@
 import torch
 import argparse
+import sys
 import os
 
 from torch import nn
@@ -9,21 +10,16 @@ import torchvision.transforms as transforms
 
 torch.manual_seed(0)
 
-
 from fedlab.core.client.scale.trainer import SubsetSerialTrainer
 from fedlab.core.client.scale.manager import ScaleClientPassiveManager
 from fedlab.core.network import DistNetwork
-
 from fedlab.utils.serialization import SerializationTool
 from fedlab.utils.logger import Logger
 from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.functional import load_dict
 
-import sys
-sys.path.append("../../../../../")
-from fedlab_benchmarks.models.cnn import AlexNet_CIFAR10, CNN_Cifar10
-
-from config import cifar10_noniid_baseline_config, cifar10_iid_baseline_config
+sys.path.join("../../../")
+from models.cnn import CNN_FEMNIST, AlexNet_CIFAR10, CNN_MNIST
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Distbelief training example")
@@ -32,18 +28,18 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=str, default="3003")
     parser.add_argument("--world_size", type=int)
     parser.add_argument("--rank", type=int)
+
+    parser.add_argument("--partition", type=str, default="iid")
+    parser.add_argument("--gpu", type=str, default="0,1,2,3")
     parser.add_argument("--ethernet", type=str, default=None)
 
-    parser.add_argument("--setting", type=str)
     args = parser.parse_args()
 
-
-    if args.setting == 'iid':
-        config = cifar10_iid_baseline_config
+    if args.gpu != "-1":
+        args.cuda = True
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     else:
-        config = cifar10_noniid_baseline_config
-
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+        args.cuda = False
 
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -58,11 +54,12 @@ if __name__ == "__main__":
         download=True,
         transform=transform_train)
 
-    if config['partition'] == "noniid":
+    if args.partition == "noniid":
         data_indices = load_dict("cifar10_noniid.pkl")
-    if config['partition'] == "iid":
+    elif args.partition == "iid":
         data_indices = load_dict("cifar10_iid.pkl")
-
+    else:
+        raise ValueError("invalid partition type ", args.partition)
 
     # Process rank x represent client id from (x-1)*10 - (x-1)*10 +10
     # e.g. rank 5 <--> client 40-50
@@ -76,8 +73,7 @@ if __name__ == "__main__":
         for idx, cid in enumerate(client_id_list)
     }
 
-    #model = CNN_Cifar10()
-    model = AlexNet_CIFAR10()
+    model = CNN_FEMNIST()
 
     aggregator = Aggregators.fedavg_aggregate
 
@@ -87,10 +83,14 @@ if __name__ == "__main__":
                           ethernet=args.ethernet)
 
     trainer = SubsetSerialTrainer(model=model,
-                            dataset=trainset,
-                            data_slices=sub_data_indices,
-                            aggregator=aggregator,
-                            args=config)
+                                  dataset=trainset,
+                                  data_slices=sub_data_indices,
+                                  aggregator=aggregator,
+                                  args={
+                                      "batch_size": 100,
+                                      "lr": 0.001,
+                                      "epochs": 5
+                                  })
 
     manager_ = ScaleClientPassiveManager(handler=trainer, network=network)
 

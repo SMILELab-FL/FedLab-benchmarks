@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class CNN_Femnist(nn.Module):
+class CNN_FEMNIST(nn.Module):
     """Used for EMNIST experiments in references[1]
     Args:
         only_digits (bool, optional): If True, uses a final layer with 10 outputs, for use with the
@@ -22,7 +22,7 @@ class CNN_Femnist(nn.Module):
         A `torch.nn.Module`.
     """
     def __init__(self, only_digits=False):
-        super(CNN_Femnist, self).__init__()
+        super(CNN_FEMNIST, self).__init__()
         self.conv2d_1 = nn.Conv2d(1, 32, kernel_size=3)
         self.max_pooling = nn.MaxPool2d(2, stride=2)
         self.conv2d_2 = nn.Conv2d(32, 64, kernel_size=3)
@@ -50,9 +50,9 @@ class CNN_Femnist(nn.Module):
         return x
 
 
-class CNN_Mnist(nn.Module):
+class CNN_MNIST(nn.Module):
     def __init__(self):
-        super(CNN_Mnist, self).__init__()
+        super(CNN_MNIST, self).__init__()
         self.conv1 = nn.Conv2d(1, 32, kernel_size=(5, 5))
         self.conv2 = nn.Conv2d(32, 64, kernel_size=(5, 5))
         self.pool = nn.MaxPool2d(kernel_size=(2, 2))
@@ -69,13 +69,13 @@ class CNN_Mnist(nn.Module):
         return x
 
 
-class CNN_Cifar10(nn.Module):
+class CNN_CIFAR10(nn.Module):
     """from torch tutorial
 
         https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
     """
     def __init__(self):
-        super().__init__()
+        super(CNN_CIFAR10,self).__init__()
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)

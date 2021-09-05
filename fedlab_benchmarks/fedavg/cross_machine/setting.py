@@ -7,7 +7,7 @@ from fedlab.utils.dataset.sampler import RawPartitionSampler
 
 sys.path.append('../../../')
 
-from models.cnn import CNN_Cifar10, CNN_Femnist, CNN_Mnist
+from models.cnn import CNN_CIFAR10, CNN_FEMNIST, CNN_MNIST
 from models.rnn import RNN_Shakespeare
 from datasets.leaf_data_process.dataloader import get_LEAF_dataloader
 
@@ -60,12 +60,12 @@ def get_dataset(args):
 
 def get_model(args):
     if args.dataset == "mnist":
-        model = CNN_Mnist()
+        model = CNN_MNIST()
     elif args.dataset == 'femnist':
-        model = CNN_Femnist()
+        model = CNN_FEMNIST()
     elif args.dataset == 'shakespeare':
         model = RNN_Shakespeare()
     else:
         raise ValueError("Invalid dataset:", args.dataset)
-        
+
     return model
