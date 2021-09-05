@@ -1,17 +1,10 @@
-import os
-import sys
 import argparse
 
-sys.path.append('../../../../')
 from fedlab.utils.logger import Logger
 from fedlab.core.server.handler import SyncParameterServerHandler
 from fedlab.core.server.manager import ServerSynchronousManager
 from fedlab.core.network import DistNetwork
-from setting import get_model
-import torch
-from setting import get_dataset
-import torchvision
-from torchvision import transforms
+from setting import get_model, get_dataset
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='FL server example')

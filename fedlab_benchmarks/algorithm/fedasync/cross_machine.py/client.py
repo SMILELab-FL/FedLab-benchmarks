@@ -7,14 +7,13 @@ import os
 
 from torch import nn
 
-sys.path.append('../../../')
-
 from fedlab.core.client.manager import ClientActiveManager
 from fedlab.core.client.trainer import ClientSGDTrainer
-from fedlab.utils.dataset.sampler import FedDistributedSampler
+from fedlab.utils.dataset.sampler import RawPartitionSampler
 from fedlab.core.network import DistNetwork
 
-from fedlab_benchmarks.models.lenet import LeNet
+sys.path.append("../../../")
+from models.cnn import CNN_Mnist
 
 
 def get_dataset(args):
@@ -42,9 +41,9 @@ def get_dataset(args):
 
     trainloader = torch.utils.data.DataLoader(
         trainset,
-        sampler=FedDistributedSampler(trainset,
-                                      client_id=args.rank,
-                                      num_replicas=args.world_size - 1),
+        sampler=RawPartitionSampler(trainset,
+                                    client_id=args.rank,
+                                    num_replicas=args.world_size - 1),
         batch_size=128,
         drop_last=True,
         num_workers=2)
@@ -71,7 +70,7 @@ if __name__ == "__main__":
     args.root = '../../../../datasets/mnist/'
     args.cuda = True
 
-    model = LeNet()
+    model = CNN_Mnist()
     trainloader, testloader = get_dataset(args)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
     criterion = nn.CrossEntropyLoss()

@@ -8,15 +8,15 @@ import torchvision
 from torchvision import transforms
 
 torch.manual_seed(0)
-sys.path.append('../../../../../')
+
 
 from fedlab.core.server.handler import SyncParameterServerHandler
 from fedlab.core.server.scale.manager import ScaleSynchronousManager
 from fedlab.core.network import DistNetwork
 from fedlab.utils.functional import AverageMeter
 
-from fedlab_benchmarks.models.cnn import CNN_Femnist
-
+sys.path.join("../../../")
+from models.cnn import CNN_Femnist
 
 def evaluate(model, criterion, test_loader):
     model.eval()

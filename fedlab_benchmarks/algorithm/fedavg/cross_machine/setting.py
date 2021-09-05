@@ -3,14 +3,13 @@ import torchvision
 import torchvision.transforms as transforms
 import sys
 
-sys.path.append('../../../')
-
 from fedlab.utils.dataset.sampler import RawPartitionSampler
 
-from fedlab_benchmarks.models.cnn import CNN_Cifar10, CNN_Femnist, CNN_Mnist
-from fedlab_benchmarks.models.rnn import RNN_Shakespeare
-from fedlab_benchmarks.datasets.leaf_data_process.dataloader import get_LEAF_dataloader
-from fedlab_benchmarks.datasets.leaf_data_process.nlp_utils.dataset_vocab.sample_build_vocab import get_built_vocab
+sys.path.append('../../../')
+
+from models.cnn import CNN_Cifar10, CNN_Femnist, CNN_Mnist
+from models.rnn import RNN_Shakespeare
+from datasets.leaf_data_process.dataloader import get_LEAF_dataloader
 
 
 def get_dataset(args):

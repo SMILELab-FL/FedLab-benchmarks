@@ -15,8 +15,8 @@ from torch.utils.data import ConcatDataset
 
 import sys
 
-sys.path.append('../../../../../')
-from fedlab_benchmarks.models.rnn import RNN_Shakespeare
+sys.path.append('../../../')
+from models.rnn import RNN_Shakespeare
 
 
 def write_file(acces, losses, name="shakespeare_noniid"):

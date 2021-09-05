@@ -9,7 +9,6 @@ References:
 """
 import torch.nn as nn
 import torch
-from fedlab_benchmarks.datasets.leaf_data_process.nlp_utils.vocab import Vocab
 
 
 class RNN_Shakespeare(nn.Module):

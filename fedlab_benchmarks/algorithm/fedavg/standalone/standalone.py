@@ -11,7 +11,7 @@ import torch
 
 torch.manual_seed(0)
 
-sys.path.append("../../../../")
+
 
 from fedlab.core.client.scale.trainer import SubsetSerialTrainer
 from fedlab.utils.aggregator import Aggregators
@@ -19,7 +19,8 @@ from fedlab.utils.serialization import SerializationTool
 from fedlab.utils.functional import evaluate
 from fedlab.utils.functional import get_best_gpu, load_dict
 
-from fedlab_benchmarks.models.cnn import CNN_Mnist
+sys.path.append("../../../")
+from models.cnn import CNN_Mnist
 
 
 def write_file(acc, loss, config, round):

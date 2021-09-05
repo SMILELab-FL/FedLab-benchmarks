@@ -5,15 +5,14 @@ import torch
 import torchvision
 from torchvision import transforms
 
-sys.path.append('../../../../../')
-
 from fedlab.core.server.handler import SyncParameterServerHandler
 from fedlab.core.server.scale.manager import ScaleSynchronousManager
 from fedlab.core.network import DistNetwork
 from fedlab.utils.logger import Logger
 from fedlab.utils.functional import AverageMeter, evaluate
 
-from fedlab_benchmarks.models.cnn import CNN_Mnist
+sys.path.join("../../../")
+from models.cnn import CNN_Mnist
 
 
 def write_file(acces, losses, args):
@@ -22,6 +21,7 @@ def write_file(acces, losses, args):
     record.write(str(losses) + "\n")
     record.write(str(acces) + "\n")
     record.close()
+
 
 class RecodeHandler(SyncParameterServerHandler):
     def __init__(self,

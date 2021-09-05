@@ -1,13 +1,11 @@
 import os
 import sys
 
-sys.path.append('../../../')
-
 from fedlab.core.network import DistNetwork
 from fedlab.core.server.handler import AsyncParameterServerHandler
 from fedlab.core.server.manager import ServerAsynchronousManager
-from fedlab_benchmarks.models.lenet import LeNet
-
+sys.path.append("../../../")
+from models.cnn import CNN_Mnist
 import argparse
 
 if __name__ == "__main__":
@@ -18,7 +16,7 @@ if __name__ == "__main__":
     parser.add_argument('--world_size', type=int)
     args = parser.parse_args()
 
-    model = LeNet().cpu()
+    model = CNN_Mnist().cpu()
     ps = AsyncParameterServerHandler(model,
                                      client_num_in_total=args.world_size - 1)
 

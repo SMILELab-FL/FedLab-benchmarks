@@ -6,25 +6,21 @@ import torchvision.transforms as transforms
 from torch import nn
 import torchvision
 import torch
+import heapq as hp
 
 torch.manual_seed(0)
 from fedlab.core.client.scale.trainer import AsyncSerialTrainer
 from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.serialization import SerializationTool
 from fedlab.utils.functional import evaluate, load_dict
-from fedlab.utils.dataset.slicing import noniid_slicing, random_slicing
 
 import sys
 
-sys.path.append("../../../../")
-from fedlab_benchmarks.models.cnn import AlexNet_CIFAR10
-
-import heapq as hp
-import threading
+sys.path.append("../../../")
+from models.cnn import AlexNet_CIFAR10
 
 # python standalone.py --com_round 2000 --sample_ratio 0.05 --batch_size 100 --epochs 5 --partition iid --name test1 --lr 0.01 --alpha 0.6
 # python standalone.py --com_round 2000 --sample_ratio 0.05 --batch_size 100 --epochs 5 --partition noniid --name test2 --lr 0.01 --alpha 0.6
-
 
 def write_file(acc, loss, args, round):
     record = open("exp_" + args.partition + "_" + args.name + ".txt", "w")

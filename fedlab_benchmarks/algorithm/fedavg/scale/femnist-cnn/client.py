@@ -9,7 +9,6 @@ import torchvision
 import torchvision.transforms as transforms
 
 torch.manual_seed(0)
-sys.path.append("../../../../../")
 
 from fedlab.core.client.scale.trainer import SubsetSerialTrainer
 from fedlab.core.client.scale.manager import ScaleClientPassiveManager
@@ -19,7 +18,8 @@ from fedlab.utils.logger import Logger
 from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.functional import load_dict
 
-from fedlab_benchmarks.models.cnn import CNN_Femnist
+sys.path.join("../../../")
+from models.cnn import AlexNet_CIFAR10, CNN_Femnist
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Distbelief training example")
@@ -83,14 +83,14 @@ if __name__ == "__main__":
                           ethernet=args.ethernet)
 
     trainer = SubsetSerialTrainer(model=model,
-                            dataset=trainset,
-                            data_slices=sub_data_indices,
-                            aggregator=aggregator,
-                            args={
-                                "batch_size": 100,
-                                "lr": 0.001,
-                                "epochs": 5
-                            })
+                                  dataset=trainset,
+                                  data_slices=sub_data_indices,
+                                  aggregator=aggregator,
+                                  args={
+                                      "batch_size": 100,
+                                      "lr": 0.001,
+                                      "epochs": 5
+                                  })
 
     manager_ = ScaleClientPassiveManager(handler=trainer, network=network)
 

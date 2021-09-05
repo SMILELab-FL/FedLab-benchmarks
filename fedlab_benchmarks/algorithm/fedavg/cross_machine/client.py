@@ -4,8 +4,6 @@ import argparse
 import sys
 import os
 
-sys.path.append("../../../../")
-
 from torch import nn
 from fedlab.core.client.manager import ClientPassiveManager
 from fedlab.core.client.trainer import ClientSGDTrainer

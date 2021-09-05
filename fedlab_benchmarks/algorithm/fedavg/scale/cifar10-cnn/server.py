@@ -15,9 +15,9 @@ from fedlab.utils.functional import AverageMeter
 
 import sys
 
-sys.path.append('../../../../../')
+sys.path.join("../../../")
+from models.cnn import CNN_Mnist, AlexNet_CIFAR10
 
-from fedlab_benchmarks.models.cnn import AlexNet_CIFAR10
 from config import cifar10_noniid_baseline_config, cifar10_iid_baseline_config
 
 

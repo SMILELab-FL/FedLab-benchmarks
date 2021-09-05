@@ -17,13 +17,19 @@ from fedlab.core.client.scale.trainer import SerialTrainer
 
 import sys
 
-sys.path.append('../../../../../')
-from fedlab_benchmarks.models.rnn import RNN_Shakespeare
-from fedlab_benchmarks.datasets.leaf_data_process.dataloader import get_LEAF_dataloader
+sys.path.join("../../../")
+from models.rnn import RNN_Shakespeare
+from datasets.leaf_data_process import get_LEAF_dataloader
 
 
 class RNNSTrainer(SerialTrainer):
-    def __init__(self, model, client_num, aggregator, cuda=True, logger=None, args=None):
+    def __init__(self,
+                 model,
+                 client_num,
+                 aggregator,
+                 cuda=True,
+                 logger=None,
+                 args=None):
         super().__init__(model,
                          client_num,
                          aggregator,
@@ -37,7 +43,7 @@ class RNNSTrainer(SerialTrainer):
         client_id = (rank - 1) * self.client_num + client_id
 
         dataset_pkl_path = "client" + str(client_id) + ".pkl"
-        with open("./pkl_dataset/train/"+dataset_pkl_path, "rb") as f:
+        with open("./pkl_dataset/train/" + dataset_pkl_path, "rb") as f:
             dataset = pickle.load(f)
 
         trainloader = torch.utils.data.DataLoader(
