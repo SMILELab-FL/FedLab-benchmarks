@@ -11,7 +11,7 @@ from fedlab.core.network import DistNetwork
 from fedlab.utils.logger import Logger
 from fedlab.utils.functional import AverageMeter, evaluate
 
-sys.path.join("../../../")
+sys.path.append("../../../")
 from models.cnn import CNN_MNIST
 
 

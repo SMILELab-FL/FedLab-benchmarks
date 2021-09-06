@@ -5,7 +5,7 @@ from fedlab.core.network import DistNetwork
 from fedlab.core.server.handler import AsyncParameterServerHandler
 from fedlab.core.server.manager import ServerAsynchronousManager
 sys.path.append("../../../")
-from models.cnn import CNN_Mnist
+from models.cnn import CNN_MNIST
 import argparse
 
 if __name__ == "__main__":
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     parser.add_argument('--world_size', type=int)
     args = parser.parse_args()
 
-    model = CNN_Mnist().cpu()
+    model = CNN_MNIST().cpu()
     ps = AsyncParameterServerHandler(model,
                                      client_num_in_total=args.world_size - 1)
 

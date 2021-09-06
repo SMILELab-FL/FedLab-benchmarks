@@ -18,7 +18,7 @@ from fedlab.utils.logger import Logger
 from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.functional import load_dict
 
-sys.path.join("../../../")
+sys.path.append("../../../")
 from models.cnn import CNN_FEMNIST, AlexNet_CIFAR10, CNN_MNIST
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ from fedlab.core.client.scale.trainer import SerialTrainer
 
 import sys
 
-sys.path.join("../../../")
+sys.path.append("../../../")
 from models.rnn import RNN_Shakespeare
 from datasets.leaf_data_process import get_LEAF_dataloader
 

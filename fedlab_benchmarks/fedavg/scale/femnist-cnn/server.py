@@ -15,7 +15,7 @@ from fedlab.core.server.scale.manager import ScaleSynchronousManager
 from fedlab.core.network import DistNetwork
 from fedlab.utils.functional import AverageMeter
 
-sys.path.join("../../../")
+sys.path.append("../../../")
 from models.cnn import CNN_FEMNIST
 
 def evaluate(model, criterion, test_loader):
