@@ -8,4 +8,4 @@ Notice:
 1. please make sure leaf dataset is downloaded and processed by leaf. (leaf code in `fedlab_benchmarks/datasets/data`)
 2. please make sure `fedlab_benchmarks/datasets/data/{dataset_name}/{train,test}` path existing for train data and test data.
 3. example script: 
-   `python create_pickle_dataset.py --leaf_root "../../datasets/data" --save_root "pickle_dataset" --dataset_name "shakespeare"`
+   `python create_pickle_dataset.py --data_root "../../datasets/data" --save_root "pickle_dataset" --dataset_name "shakespeare"`
