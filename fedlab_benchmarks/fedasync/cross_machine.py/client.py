@@ -13,7 +13,7 @@ from fedlab.utils.dataset.sampler import RawPartitionSampler
 from fedlab.core.network import DistNetwork
 
 sys.path.append("../../../")
-from models.cnn import CNN_Mnist
+from models.cnn import CNN_MNIST
 
 
 def get_dataset(args):
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     args.root = '../../../../datasets/mnist/'
     args.cuda = True
 
-    model = CNN_Mnist()
+    model = CNN_MNIST()
     trainloader, testloader = get_dataset(args)
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
     criterion = nn.CrossEntropyLoss()

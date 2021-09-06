@@ -20,8 +20,8 @@ from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.functional import load_dict
 
 import sys
-sys.path.append("../../../../../")
-from fedlab_benchmarks.models.cnn import AlexNet_CIFAR10, CNN_CIFAR10
+sys.path.append("../../../")
+from models.cnn import AlexNet_CIFAR10, CNN_CIFAR10
 
 from config import cifar10_noniid_baseline_config, cifar10_iid_baseline_config
 
