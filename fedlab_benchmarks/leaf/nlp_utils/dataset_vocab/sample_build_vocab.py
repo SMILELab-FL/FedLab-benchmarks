@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import sys
 import math
 import random
 import pickle
@@ -101,8 +100,12 @@ def get_built_vocab(dataset: str) -> Vocab:
     Returns:
         if there is no built vocab file for `dataset`, return None, else return Vocab
     """
-    current = Path.cwd()
-    vocab_file_path = current / "{}_vocab.pickle".format(dataset)
+    vocab_file_path = dataset + '_vocab.pck'
+    vocab_file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), vocab_file_path)
+    if not os.path.exists(vocab_file_path):
+        print('There is no built vocab file for {} dataset, please run `main` or `build_vocab.sh` to build it firstly.'
+              .format(dataset))
+        return None
     vocab_file = open(vocab_file_path, 'rb')  # get vocab based on sample data
     vocab = pickle.load(vocab_file)
     return vocab
