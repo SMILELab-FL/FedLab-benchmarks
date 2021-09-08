@@ -13,21 +13,29 @@
 # limitations under the License.
 
 import os
-import sys
 import math
 import random
 import pickle
 import argparse
+from pathlib import Path
 
-from ...json_data_read_util import read_dir
+from ...read_util import get_data_json
 from ..tokenizer import Tokenizer
 from ..vocab import Vocab
 
 
 class DataSample:
-    def __init__(self, dataset: str, data_path: str, select_ratio: float, is_to_tokens=True, tokenizer=None):
+    """ sample some train data to generate vocab in nlp question
+    Args:
+        dataset (str): string of dataset name
+        data_root (Path): path for data saving root
+        select_ratio (float): select ratio
+        is_to_tokens (bool, optional): check if using tokenizer , default to True
+        tokenizer (bool, optional): giving tokenizer to do tokenization
+    """
+    def __init__(self, dataset: str, data_root: Path, select_ratio: float, is_to_tokens=True, tokenizer=None):
         self.dataset = dataset
-        self.data_path = data_path  # for train data
+        self.data_root = data_root
         self.select_ratio = select_ratio
         self.select_client, self.data = self.choose_client_data()
         self.data_token = []
@@ -37,7 +45,9 @@ class DataSample:
             self.data2token()
 
     def choose_client_data(self):
-        client_id_name_dict, client_groups, client_name_data_dict = read_dir(data_dir=self.data_path)
+        client_id_name_dict, client_groups, client_name_data_dict = get_data_json(data_root=self.data_root,
+                                                                                  dataset_name=self.dataset,
+                                                                                  dataset_type="train")
 
         client_num = len(client_id_name_dict)
         random.seed(0)
@@ -62,10 +72,11 @@ class DataSample:
         return raw_x
 
 
-def build_vocab(dataset: str, data_select_ratio: float, vocab_limit_size: int):
+def build_vocab(data_root: Path, dataset: str, data_select_ratio: float, vocab_limit_size: int):
     """Build vocab for dataset with random selected client
 
     Args:
+        data_root (Path): string path for data saving root
         dataset (str): string of dataset name to build vocab
         data_select_ratio (float): random select clients ratio
         vocab_limit_size (int): limit max number of vocab size
@@ -73,10 +84,9 @@ def build_vocab(dataset: str, data_select_ratio: float, vocab_limit_size: int):
     Returns:
         save vocab.pck for dataset
     """
-    data_path = '../data/' + dataset + '/data/train'
-    data_sample = DataSample(dataset=dataset, data_path=data_path, select_ratio=data_select_ratio)
+    data_sample = DataSample(dataset=dataset, data_root=data_root, select_ratio=data_select_ratio)
     vocab = Vocab(origin_data_tokens=data_sample.data_token, vocab_limit_size=vocab_limit_size)
-    save_file_path = dataset + '_vocab.pck'
+    save_file_path = data_root / dataset / "data/train" / "{}_vocab.pickle".format(dataset)
     pickle.dump(vocab, open(save_file_path, 'wb'))
     print('sample data to build vocab for {} dataset is completed!'.format(dataset))
 
@@ -101,15 +111,17 @@ def get_built_vocab(dataset: str) -> Vocab:
     return vocab
 
 
+# Example: python sample_build_vocab.py --dataset "sent140" --data_select_ratio 0.25 --vocab_limit_size 30000
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Sample data to build nlp vocab')
+    parser.add_argument("--data_root", type=str, default='')
     parser.add_argument("--dataset", type=str, default='sent140')
     parser.add_argument("--data_select_ratio", type=float, default=0.25)
     parser.add_argument("--vocab_limit_size", type=int, default=30000)
     args = parser.parse_args()
 
-    vocab_file_path = args.dataset + '_vocab.pck'
+    vocab_file_path = args.dataset + '_vocab.pickle'
     if os.path.exists(vocab_file_path):
         print('There has been a built vocab file for {} dataset, please delete it before re-building'.format(args.dataset))
     else:
-        build_vocab(args.dataset, args.data_select_ratio, args.vocab_limit_size)
+        build_vocab(Path(args.data_root), args.dataset, args.data_select_ratio, args.vocab_limit_size)

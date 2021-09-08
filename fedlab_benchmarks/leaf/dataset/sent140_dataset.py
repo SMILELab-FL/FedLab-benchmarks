@@ -52,7 +52,7 @@ class Sent140Dataset(Dataset):
         """transform token data to indices sequence by `vocab`
 
         Args:
-            vocab (fedlabbenchmark.datasets.leaf_data_process_nlp_utils.vocab): vocab for data_token
+            vocab (fedlab_benchmark.leaf.nlp_utils.vocab): vocab for data_token
             maxlen (int): max length of sentence
 
         Returns:

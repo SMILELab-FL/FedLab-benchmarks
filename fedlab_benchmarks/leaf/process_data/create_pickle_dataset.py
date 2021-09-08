@@ -6,23 +6,27 @@ import argparse
 import json
 import pickle
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 import sys
 
-sys.path.append("../../../../")
+sys.path.append("../../../")
 
-from fedlab_benchmarks.datasets.leaf_data_process.dataset.shakespeare_dataset import ShakespeareDataset
+from torch.utils.data.dataset import Dataset
+from fedlab_benchmarks.leaf.dataset.femnist_dataset import FemnistDataset
+from fedlab_benchmarks.leaf.dataset.shakespeare_dataset import ShakespeareDataset
+from fedlab_benchmarks.leaf.dataset.sent140_dataset import Sent140Dataset
 
 
-def save_dataset_pickle(save_root: Path, user_idx: int, dataset_type: str, dataset):
+def save_dataset_pickle(save_root: Path, dataset_name: str, user_idx: int, dataset_type: str, dataset: Dataset):
     """Saves partition for specific client
     Args:
         save_root (Path): Root folder where to save partition
         user_idx (int): User ID
+        dataset_name (str): name of dataset
         dataset_type (str): Dataset type {train, test}
-        dataset (ShakespeareDataset): Dataset {train, test}
+        dataset (Dataset): Dataset {train, test}
     """
-    save_dir = save_root / dataset_type
+    save_dir = save_root / dataset_name / dataset_type
     save_dir.mkdir(parents=True, exist_ok=True)
     with open(save_dir / f"{dataset_type}_{str(user_idx)}.pickle", "wb") as save_file:
         pickle.dump(dataset, save_file)
@@ -34,6 +38,7 @@ def process_user(
         user_str: str,
         dataset_type: str,
         save_root: Path,
+        dataset_name: str,
 ):
     """Creates and saves partition for user
     Args:
@@ -42,18 +47,26 @@ def process_user(
         user_str (str): Original User ID
         dataset_type (str): Dataset type {train, test}
         save_root (Path): Root folder where to save the partition
+        dataset_name (str): name of dataset
     """
-    sentence = json_file["user_data"][user_str]["x"]
-    next_char = json_file["user_data"][user_str]["y"]
-    dataset = ShakespeareDataset(client_id=user_idx, client_str=user_str,
-                                 input=sentence, output=next_char)
-    save_dataset_pickle(save_root, user_idx, dataset_type, dataset)
+    data = json_file["user_data"][user_str]["x"]
+    label = json_file["user_data"][user_str]["y"]
+    if dataset_name == "femnist":
+        dataset = FemnistDataset(client_id=user_idx, client_str=user_str, input=data, output=label)
+    elif dataset_name == "shakespeare":
+        dataset = ShakespeareDataset(client_id=user_idx, client_str=user_str, input=data, output=label)
+    elif dataset_name == "sent140":
+        dataset = Sent140Dataset(client_id=user_idx, client_str=user_str, input=data, output=label)
+    else:
+        raise ValueError("Invalid dataset:", dataset_name)
+    save_dataset_pickle(save_root, dataset_name, user_idx, dataset_type, dataset)
 
 
 def split_json_and_save(
         dataset_type: str,
         paths_to_json: List[Path],
         save_root: Path,
+        dataset_name: str,
 ):
     """Splits LEAF generated datasets and creates individual client partitions.
     Args:
@@ -61,8 +74,17 @@ def split_json_and_save(
         paths_to_json (PathLike): Path to LEAF JSON files containing dataset.
         save_root (Path): Root directory where to save the individual client
             partition files.
+        dataset_name (str): name of dataset
     """
     user_count = 0
+    # check leaf data downloaded
+    if len(paths_to_json) == 0:
+        print("there is no leaf json file for {} {} data, please run leaf in `fedlab_benchmarks/datasets/data` firstly"
+              .format(dataset_name, dataset_type))
+        return
+
+    print("processing {} {} data to dataset in pickle file".format(dataset_name, dataset_type))
+
     for path_to_json in paths_to_json:
         with open(path_to_json, "r") as json_file:
             json_file = json.load(json_file)
@@ -70,59 +92,63 @@ def split_json_and_save(
             num_users = len(users_list)
             for user_idx, user_str in enumerate(users_list):
                 process_user(
-                    json_file, user_count + user_idx, user_str, dataset_type, save_root
+                    json_file, user_count + user_idx, user_str, dataset_type, save_root, dataset_name
                 )
         user_count += num_users
+    print("complete processing {} {} data to dataset in pickle file! "
+          "all users number is {}".format(dataset_name, dataset_type, user_count))
 
 
+# Example:
+# python create_pickle_dataset.py --data_root "../../datasets/data" --save_root "pickle_dataset" --dataset_name "shakespeare"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="""download and process a LEAF Shakespeare train/test dataset,
         save each client's train/test dataset in their respective folder in a form of pickle."""
     )
     parser.add_argument(
+        "--data_root",
+        type=str,
+        required=True,
+        help="""Root folder which contains many datasets downloading scripts and their data, including leaf dataset
+                example in fedlab_benchmarks: '../../datasets/data' """,
+    )
+    parser.add_argument(
         "--save_root",
         type=str,
         required=True,
-        help="""Root folder where partitions will be save as
-                {save_root}/{train,test}/{client_id}.pickle""",
+        help="""Root folder where dataset will be save as
+                {save_root}/{dataset_name}/{train,test}/{client_id}.pickle""",
     )
     parser.add_argument(
-        "--leaf_train_jsons_root",
+        "--dataset_name",
         type=str,
         required=True,
-        help="""Complete path to JSON file containing the generated
-                trainset for LEAF Shakespeare.""",
-    )
-    parser.add_argument(
-        "--leaf_test_jsons_root",
-        type=str,
-        required=True,
-        help="""Complete path to JSON file containing the generated
-            *testset* for LEAF Shakespeare.""",
+        help="""processed dataset name""",
     )
 
     args = parser.parse_args()
 
-    # Split train dataset into train and validation
-    # then save files for each client
+    # save train dataset
+    train_path = Path(args.data_root) / args.dataset_name / "data/train"
     original_train_datasets = sorted(
-        list(Path(args.leaf_train_jsons_root).glob("**/*.json"))
+        list(train_path.glob("**/*.json"))
     )
-    # original_train_dataset = Path(args.leaf_train_json)
-    existing_users = split_json_and_save(
+    split_json_and_save(
         dataset_type="train",
         paths_to_json=original_train_datasets,
         save_root=Path(args.save_root),
+        dataset_name=args.dataset_name,
     )
 
     # Split and save the test files
+    test_path = Path(args.data_root) / args.dataset_name / "data/test"
     original_test_datasets = sorted(
-        list(Path(args.leaf_test_jsons_root).glob("**/*.json"))
+        list(test_path.glob("**/*.json"))
     )
-    # original_test_dataset = Path(args.leaf_test_json)
     split_json_and_save(
         dataset_type="test",
         paths_to_json=original_test_datasets,
         save_root=Path(args.save_root),
+        dataset_name=args.dataset_name,
     )
