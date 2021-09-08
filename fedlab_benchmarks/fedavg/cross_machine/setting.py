@@ -5,16 +5,15 @@ import sys
 
 from fedlab.utils.dataset.sampler import RawPartitionSampler
 
-sys.path.append('../../../')
+sys.path.append('../../')
 
 from models.cnn import CNN_CIFAR10, CNN_FEMNIST, CNN_MNIST
 from models.rnn import RNN_Shakespeare
-from datasets.leaf_data_process.dataloader import get_LEAF_dataloader
-
+from leaf.dataloader import get_LEAF_dataloader
 
 def get_dataset(args):
     if args.dataset == 'mnist':
-        root = '../../../datasets/data/mnist/'
+        root = '../../datasets/data/mnist/'
         train_transform = transforms.Compose([
             transforms.ToTensor(),
         ])

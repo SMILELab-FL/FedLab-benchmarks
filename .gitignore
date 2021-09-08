@@ -156,6 +156,9 @@ fedlab_benchmarks/datasets/data/mnist/*
 fedlab_benchmarks/datasets/data/cifar10/*
 !fedlab_benchmarks/datasets/data/cifar10/*.py
 
+fedlab_benchmarks/leaf/process_data/*/test
+
+fedlab_benchmarks/leaf/process_data/*/train
 
 fedlab_benchmarks/datasets/data/*/data
 fedlab_benchmarks/datasets/data/*/meta
