@@ -100,7 +100,7 @@ def split_json_and_save(
 
 
 # Example:
-# python create_pickle_dataset.py --data_root "../../datasets/data" --save_root "pickle_dataset" --dataset_name "shakespeare"
+# python create_pickle_dataset.py --data_root "../../datasets/data" --save_root "./pickle_dataset" --dataset_name "shakespeare"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="""download and process a LEAF Shakespeare train/test dataset,
