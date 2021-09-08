@@ -79,7 +79,7 @@ def split_json_and_save(
     user_count = 0
     # check leaf data downloaded
     if len(paths_to_json) == 0:
-        print("there is no leaf json file for {} {} data, please run leaf in `fedlab_benchmarks/datasets/data` firstly"
+        print("there is no leaf json file for {} {} data, please run leaf in `fedlab_benchmarks/datasets` firstly"
               .format(dataset_name, dataset_type))
         return
 
@@ -100,7 +100,7 @@ def split_json_and_save(
 
 
 # Example:
-# python create_pickle_dataset.py --data_root "../../datasets/data" --save_root "./pickle_dataset" --dataset_name "shakespeare"
+# python create_pickle_dataset.py --data_root "../../datasets" --save_root "./pickle_dataset" --dataset_name "shakespeare"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="""download and process a LEAF Shakespeare train/test dataset,
@@ -111,7 +111,7 @@ if __name__ == "__main__":
         type=str,
         required=True,
         help="""Root folder which contains many datasets downloading scripts and their data, including leaf dataset
-                example in fedlab_benchmarks: '../../datasets/data' """,
+                example in fedlab_benchmarks: '../../datasets' """,
     )
     parser.add_argument(
         "--save_root",
