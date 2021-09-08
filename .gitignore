@@ -147,21 +147,21 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# dataset
+# datasets
 fedlab_benchmarks/fedavg/scale/shakespeare-rnn/pkl_dataset/*
 
-fedlab_benchmarks/datasets/data/mnist/*
-!fedlab_benchmarks/datasets/data/mnist/*.py
+fedlab_benchmarks/datasets/mnist/*
+!fedlab_benchmarks/datasets/mnist/*.py
 
-fedlab_benchmarks/datasets/data/cifar10/*
-!fedlab_benchmarks/datasets/data/cifar10/*.py
+fedlab_benchmarks/datasets/cifar10/*
+!fedlab_benchmarks/datasets/cifar10/*.py
 
 fedlab_benchmarks/leaf/process_data/*/test
 
 fedlab_benchmarks/leaf/process_data/*/train
 
-fedlab_benchmarks/datasets/data/*/data
-fedlab_benchmarks/datasets/data/*/meta
+fedlab_benchmarks/datasets/*/data
+fedlab_benchmarks/datasets/*/meta
 
 actions-runner
 

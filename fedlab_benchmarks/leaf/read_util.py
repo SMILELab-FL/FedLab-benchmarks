@@ -9,7 +9,7 @@ from collections import defaultdict
 from torch.utils.data import ConcatDataset
 
 
-def get_dataset_pickle(dataset_name: str, client_id: int, dataset_type: str, pickle_root: str):
+def get_dataset_pickle(dataset_name: str, client_id: int, dataset_type: str, pickle_root: Path):
     """load pickle dataset file for `dataset_name` `dataset_type` data based on client with client_id
 
     Args:
@@ -22,7 +22,8 @@ def get_dataset_pickle(dataset_name: str, client_id: int, dataset_type: str, pic
     Returns:
         if there is no pickle file for `dataset`, throw FileNotFoundError, else return responding dataset
     """
-    pickle_file = Path(pickle_root) / dataset_name / dataset_type / f"{dataset_type}_{client_id}.pickle"
+    pickle_root = Path(__file__).parent.resolve() / pickle_root
+    pickle_file = pickle_root / dataset_name / dataset_type / f"{dataset_type}_{client_id}.pickle"
     dataset = pickle.load(open(pickle_file, 'rb'))
     return dataset
 
@@ -37,7 +38,8 @@ def get_all_dataset_pickle(dataset_name: str, dataset_type: str, pickle_root: st
     Returns:
         ConcatDataset for dataset saved in each pickle file
     """
-    pickle_files_path = Path(pickle_root) / dataset_name / dataset_type / dataset_type
+    pickle_root = Path(__file__).parent.resolve() / pickle_root
+    pickle_files_path = pickle_root / dataset_name / dataset_type
     dataset_list = []
     for file in list(pickle_files_path.glob("**/*.pickle")):
         dataset_list.append(pickle.load(open(file, 'rb')))
@@ -61,7 +63,6 @@ def get_data_json(data_root: str, dataset_name: str, dataset_type: str):
     client_name2data = defaultdict(lambda: None)
 
     data_dir = Path(data_root) / dataset_name / "data" / dataset_type
-    t = data_dir.absolute()
     files = list(data_dir.glob("**/*.json"))
     for f in files:
         with open(f, 'r') as inf:
