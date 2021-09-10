@@ -155,7 +155,7 @@ fedlab_benchmarks/datasets/*/MNIST
 
 fedlab_benchmarks/leaf/process_data/*/test
 fedlab_benchmarks/leaf/process_data/*/train
-
+fedlab_benchmarks/leaf/process_data/pickle_dataset
 actions-runner
 
 # tests

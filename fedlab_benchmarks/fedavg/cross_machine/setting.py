@@ -13,7 +13,7 @@ from leaf.dataloader import get_LEAF_dataloader
 
 def get_dataset(args):
     if args.dataset == 'mnist':
-        root = '../../datasets/data/mnist/'
+        root = '../../datasets/mnist/'
         train_transform = transforms.Compose([
             transforms.ToTensor(),
         ])
