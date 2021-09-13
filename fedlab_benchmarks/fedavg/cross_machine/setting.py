@@ -9,6 +9,7 @@ sys.path.append('../../')
 
 from models.cnn import CNN_CIFAR10, CNN_FEMNIST, CNN_MNIST
 from models.rnn import RNN_Shakespeare
+from models.mlp import Mlp_CelebA
 from leaf.dataloader import get_LEAF_dataloader
 
 def get_dataset(args):
@@ -51,6 +52,9 @@ def get_dataset(args):
     elif args.dataset == 'shakespeare':
         trainloader, testloader = get_LEAF_dataloader(dataset=args.dataset,
                                                       client_id=args.rank)
+    elif args.dataset == 'celeba':
+        trainloader, testloader = get_LEAF_dataloader(dataset=args.dataset,
+                                                      client_id=args.rank)
     else:
         raise ValueError("Invalid dataset:", args.dataset)
 
@@ -64,6 +68,8 @@ def get_model(args):
         model = CNN_FEMNIST()
     elif args.dataset == 'shakespeare':
         model = RNN_Shakespeare()
+    elif args.dataset == 'celeba':
+        model = Mlp_CelebA()
     else:
         raise ValueError("Invalid dataset:", args.dataset)
 
