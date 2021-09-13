@@ -37,8 +37,6 @@ def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
         trainloader, testloader = get_LEAF_dataloader(dataset='shakespeare', client_id=1)
     """
     # get vocab and index data
-    if dataset == 'sent140':
-        vocab = get_built_vocab(dataset)
 
     pickle_root = "./process_data/pickle_dataset"
     trainset = get_dataset_pickle(dataset_name=dataset, client_id=client_id, dataset_type='train', pickle_root=pickle_root)

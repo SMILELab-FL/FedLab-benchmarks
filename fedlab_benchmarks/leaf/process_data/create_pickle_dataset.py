@@ -7,6 +7,7 @@ import json
 import pickle
 from pathlib import Path
 from typing import Any, Dict, List
+from torchvision import transforms
 import sys
 
 sys.path.append("../../../")
@@ -14,6 +15,7 @@ sys.path.append("../../../")
 from torch.utils.data.dataset import Dataset
 from fedlab_benchmarks.leaf.dataset.femnist_dataset import FemnistDataset
 from fedlab_benchmarks.leaf.dataset.shakespeare_dataset import ShakespeareDataset
+from fedlab_benchmarks.leaf.dataset.celeba_dataset import CelebADataset
 from fedlab_benchmarks.leaf.dataset.sent140_dataset import Sent140Dataset
 
 
@@ -55,8 +57,21 @@ def process_user(
         dataset = FemnistDataset(client_id=user_idx, client_str=user_str, input=data, output=label)
     elif dataset_name == "shakespeare":
         dataset = ShakespeareDataset(client_id=user_idx, client_str=user_str, input=data, output=label)
+    elif dataset_name == "celeba":
+        image_size = 64
+        image_transform = transforms.Compose([
+            transforms.Resize(image_size),
+            transforms.CenterCrop(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5],
+                                 std=[0.5, 0.5, 0.5])
+        ])
+        dataset = CelebADataset(client_id=user_idx, client_str=user_str, input=data, output=label,
+                                image_root="../../datasets/celeba/data/raw/img_align_celeba",
+                                transform=image_transform)
     elif dataset_name == "sent140":
         dataset = Sent140Dataset(client_id=user_idx, client_str=user_str, input=data, output=label)
+
     else:
         raise ValueError("Invalid dataset:", dataset_name)
     save_dataset_pickle(save_root, dataset_name, user_idx, dataset_type, dataset)

@@ -77,3 +77,32 @@ def get_data_json(data_root: str, dataset_name: str, dataset_type: str):
     client_id2name = dict(zip(clients_id, clients_name))
 
     return client_id2name, groups, client_name2data
+
+
+if __name__ == '__main__':
+    client_id2name, groups, client_name2data = get_data_json("../datasets", "celeba", "train")
+    from PIL import Image
+    import torch
+
+    IMAGE_SIZE = 84
+    IMAGE_DIR = Path(__file__).parent.resolve() / "../datasets/celeba/data/raw/img_align_celeba"
+
+    for (key, value) in client_name2data.items():
+        input = value['x']
+        output = value['y']
+        from torchvision import transforms
+        image_transform = transforms.Compose([
+                            transforms.ToTensor(),
+                            ])
+
+        data = []
+        targets = []
+        for index in range(len(input)):
+            image_name = input[index]
+            label = output[index]
+
+            image = Image.open(IMAGE_DIR / image_name).resize((IMAGE_SIZE, IMAGE_SIZE)).convert('RGB')
+            image_tensor = image_transform(image)
+            data.append(image_tensor)
+            targets.append(torch.tensor(label, dtype=torch.long))
+        print("{} is completed".format(key))
