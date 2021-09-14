@@ -22,6 +22,9 @@ from models.rnn import RNN_Shakespeare
 from datasets.leaf_data_process import get_LEAF_dataloader
 
 
+# 660 client in total
+# 10 client process, 66 dataset shard per/process.
+
 class RNNSTrainer(SerialTrainer):
     def __init__(self,
                  model,
@@ -113,6 +116,6 @@ if __name__ == "__main__":
                               "epochs": 1
                           })
 
-    manager_ = ScaleClientPassiveManager(handler=trainer, network=network)
+    manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
 
     manager_.run()

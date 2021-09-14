@@ -15,7 +15,6 @@ from fedlab.core.network import DistNetwork
 sys.path.append("../../../")
 from models.cnn import CNN_MNIST
 
-
 def get_dataset(args):
     """
     :param dataset_name:
@@ -67,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument("--wd", type=float, default=0)
     parser.add_argument("--cuda", type=bool, default=True)
     args = parser.parse_args()
-    args.root = '../../../../datasets/mnist/'
+    args.root = '../../../datasets/mnist/'
     args.cuda = True
 
     model = CNN_MNIST()
@@ -84,5 +83,5 @@ if __name__ == "__main__":
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,
                           rank=args.rank)
-    Manager = ClientActiveManager(handler=handler, network=network)
+    Manager = ClientActiveManager(trainer=handler, network=network)
     Manager.run()
