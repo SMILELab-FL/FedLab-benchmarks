@@ -5,6 +5,8 @@
 
 This markdown file introduces the process of using LEAF dataset in FedLab.
 
+Read this in another language: [简体中文](./README_zh-cn.md).
+
 ### description of Leaf datasets
 
 The LEAF benchmark contains the federation settings of Celeba, femnist, Reddit, sent140, shakespeare and synthetic datasets. With reference to [leaf-readme.md](https://github.com/talwalkarlab/leaf) , the introduction the total number of users and the corresponding task categories of leaf datasets are given below.
