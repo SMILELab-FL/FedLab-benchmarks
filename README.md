@@ -3,7 +3,7 @@ This repo contains standard implementations of FedLab and its provided benchmark
 
 Currently, following algorithms or benchrmarks are available：
 
-- [x] FedAvg: [Communication-Efficient Learning of Deep Networks from Decentralized Data. 2016-02. AISTAT 2017](http://proceedings.mlr.press/v54/mcmahan17a/mcmahan17a.pdf)
+- [x] FedAvg: [Communication-Efficient Learning of Deep Networks from Decentralized Data](http://proceedings.mlr.press/v54/mcmahan17a/mcmahan17a.pdf)
 - [x] FedAsync: [Asynchronous Federated Optimization](http://arxiv.org/abs/1903.03934)
 - [x] LEAF: [A Benchmark for Federated Settings](http://arxiv.org/abs/1812.01097)
 
