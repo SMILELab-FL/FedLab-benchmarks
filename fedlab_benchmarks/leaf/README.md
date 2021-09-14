@@ -1,5 +1,4 @@
-# Benchmarks
-## \[FedLab\] The use of the benchmark leaf of the federated data set
+# The usage of the benchmark datasets LEAF - FedLab and PyTorch version
 
 **FedLab migrates the TensorFlow version of LEAF dataset to the PyTorch framework, and provides the implementation of dataloader for the corresponding dataset. The unified interface is in `fedlab_benchmarks/leaf/dataloader.py`**
 
