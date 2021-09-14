@@ -5,7 +5,7 @@
 
 This markdown file introduces the process of using LEAF dataset in FedLab.
 
-Read this in another language: [简体中文](./README_zh-cn.md).
+Read this in another language: [简体中文](./README_zh_cn.md).
 
 ### description of Leaf datasets
 
