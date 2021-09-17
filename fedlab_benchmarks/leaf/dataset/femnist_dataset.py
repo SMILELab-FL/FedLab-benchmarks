@@ -19,27 +19,27 @@ from torch.utils.data import Dataset
 
 class FemnistDataset(Dataset):
 
-    def __init__(self, client_id: int, client_str: str, input: list, output: list):
+    def __init__(self, client_id: int, client_str: str, data: list, targets: list):
         """get `Dataset` for femnist dataset
 
          Args:
             client_id (int): client id
             client_str (str): client name string
-            input (list): input image list data
-            output (list):  output label list
+            data (list): image data list
+            targets (list): image class target list
         """
         self.client_id = client_id
         self.client_str = client_str
-        self.data, self.targets = self.get_client_data_target(input, output)
+        self.data = data
+        self.targets = targets
+        self._process_data_target()
 
-    def get_client_data_target(self, input, output):
-        """process client data and target for input and output
+    def _process_data_target(self):
+        """process client's data and target
 
-        Returns: data and target for client id
         """
-        data = torch.tensor(input, dtype=torch.float32).reshape(-1, 1, 28, 28)
-        targets = torch.tensor(output, dtype=torch.long)
-        return data, targets
+        self.data = torch.tensor(self.data, dtype=torch.float32).reshape(-1, 1, 28, 28)
+        self.targets = torch.tensor(self.targets, dtype=torch.long)
 
     def __len__(self):
         return len(self.targets)
