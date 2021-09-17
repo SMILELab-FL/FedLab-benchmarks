@@ -53,14 +53,12 @@ def write_file(acces, losses, name="cifar10_vgg_iid"):
 class RecodeHandler(SyncParameterServerHandler):
     def __init__(self,
                  model,
-                 client_num_in_total,
                  test_loader,
                  global_round=5,
                  cuda=False,
                  sample_ratio=1.0,
                  logger=None):
         super().__init__(model,
-                         client_num_in_total,
                          global_round=global_round,
                          cuda=cuda,
                          sample_ratio=sample_ratio,
@@ -116,7 +114,6 @@ if __name__ == "__main__":
                                              shuffle=False)
 
     handler = RecodeHandler(model,
-                            client_num_in_total=1,
                             global_round=args.round,
                             sample_ratio=args.sample,
                             test_loader=testloader,

@@ -49,7 +49,7 @@ if __name__ == "__main__":
                              (0.2023, 0.1994, 0.2010))
     ])
     trainset = torchvision.datasets.CIFAR10(
-        root='../../../../datasets/data/cifar10/',
+        root='../../../datasets/cifar10/',
         train=True,
         download=True,
         transform=transform_train)
@@ -92,6 +92,6 @@ if __name__ == "__main__":
                                       "epochs": 5
                                   })
 
-    manager_ = ScaleClientPassiveManager(handler=trainer, network=network)
+    manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
 
     manager_.run()

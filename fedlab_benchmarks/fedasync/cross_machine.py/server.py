@@ -17,8 +17,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model = CNN_MNIST().cpu()
-    ps = AsyncParameterServerHandler(model,
-                                     client_num_in_total=args.world_size - 1)
+    ps = AsyncParameterServerHandler(model)
 
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,

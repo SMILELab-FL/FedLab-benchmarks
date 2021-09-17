@@ -23,8 +23,6 @@ if __name__ == "__main__":
     model = get_model(args)
     LOGGER = Logger(log_name="server")
     handler = SyncParameterServerHandler(model,
-                                         client_num_in_total=args.world_size -
-                                         1,
                                          global_round=args.round,
                                          logger=LOGGER,
                                          sample_ratio=args.sample)

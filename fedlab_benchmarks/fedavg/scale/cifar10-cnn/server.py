@@ -58,7 +58,6 @@ def write_file(acces, losses, config):
 class RecodeHandler(SyncParameterServerHandler):
     def __init__(self,
                  model,
-                 client_num_in_total,
                  test_loader,
                  global_round=5,
                  cuda=False,
@@ -66,7 +65,6 @@ class RecodeHandler(SyncParameterServerHandler):
                  logger=None,
                  config=None):
         super().__init__(model,
-                         client_num_in_total,
                          global_round=global_round,
                          cuda=cuda,
                          sample_ratio=sample_ratio,
@@ -115,7 +113,7 @@ if __name__ == "__main__":
     ])
 
     testset = torchvision.datasets.CIFAR10(
-        root='../../../../datasets/data/cifar10/',
+        root='../../../datasets/cifar10/',
         train=False,
         download=True,
         transform=transform_test)
@@ -126,7 +124,6 @@ if __name__ == "__main__":
                                              shuffle=False)
 
     handler = RecodeHandler(model,
-                            client_num_in_total=1,
                             global_round=config["round"],
                             sample_ratio=config["sample_ratio"],
                             test_loader=testloader,

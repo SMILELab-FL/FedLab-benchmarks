@@ -19,11 +19,10 @@ import pickle
 import argparse
 import sys
 from pathlib import Path
-sys.path.append("../../../")
 
-from fedlab_benchmarks.leaf.read_util import get_data_json
-from fedlab_benchmarks.leaf.nlp_utils.tokenizer import Tokenizer
-from fedlab_benchmarks.leaf.nlp_utils.vocab import Vocab
+from ...read_util import get_data_json
+from ...nlp_utils.tokenizer import Tokenizer
+from ...nlp_utils.vocab import Vocab
 
 
 class DataSample:

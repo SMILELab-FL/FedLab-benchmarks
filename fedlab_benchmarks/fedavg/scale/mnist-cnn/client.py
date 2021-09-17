@@ -40,7 +40,7 @@ if __name__ == "__main__":
         args.cuda = False
 
     trainset = torchvision.datasets.MNIST(
-        root='../../../../datasets/data/mnist/',
+        root='../../../datasets/mnist/',
         train=True,
         download=True,
         transform=transforms.ToTensor())
@@ -83,6 +83,6 @@ if __name__ == "__main__":
                                 "epochs": 5
                             })
 
-    manager_ = ScaleClientPassiveManager(handler=trainer, network=network)
+    manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
 
     manager_.run()
