@@ -1,5 +1,5 @@
 # FedLab-benchmarks
-This repo contains standard implementations of FedLab and its provided benchmarks. 
+This repo contains standard FL algorithm implementations and FL benchmarks using [FedLab](https://github.com/SMILELab-FL/FedLab). 
 
 Currently, following algorithms or benchrmarks are available：
 
