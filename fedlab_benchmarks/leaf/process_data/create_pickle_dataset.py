@@ -54,9 +54,15 @@ def process_user(
     data = json_file["user_data"][user_str]["x"]
     label = json_file["user_data"][user_str]["y"]
     if dataset_name == "femnist":
-        dataset = FemnistDataset(client_id=user_idx, client_str=user_str, input=data, output=label)
+        dataset = FemnistDataset(client_id=user_idx,
+                                 client_str=user_str,
+                                 data=data,
+                                 targets=label)
     elif dataset_name == "shakespeare":
-        dataset = ShakespeareDataset(client_id=user_idx, client_str=user_str, input=data, output=label)
+        dataset = ShakespeareDataset(client_id=user_idx,
+                                     client_str=user_str,
+                                     data=data,
+                                     targets=label)
     elif dataset_name == "celeba":
         image_size = 64
         image_transform = transforms.Compose([
@@ -66,11 +72,17 @@ def process_user(
             transforms.Normalize(mean=[0.5, 0.5, 0.5],
                                  std=[0.5, 0.5, 0.5])
         ])
-        dataset = CelebADataset(client_id=user_idx, client_str=user_str, input=data, output=label,
+        dataset = CelebADataset(client_id=user_idx,
+                                client_str=user_str,
+                                data=data,
+                                targets=label,
                                 image_root="../../datasets/celeba/data/raw/img_align_celeba",
                                 transform=image_transform)
     elif dataset_name == "sent140":
-        dataset = Sent140Dataset(client_id=user_idx, client_str=user_str, input=data, output=label)
+        dataset = Sent140Dataset(client_id=user_idx,
+                                 client_str=user_str,
+                                 data=data,
+                                 targets=label)
 
     else:
         raise ValueError("Invalid dataset:", dataset_name)

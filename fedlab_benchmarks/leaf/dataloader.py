@@ -18,7 +18,7 @@
 
 import torch
 from torch.utils.data import ConcatDataset
-from .read_util import get_dataset_pickle
+from .read_util import get_dataset_pickle, get_all_dataset_pickle
 from .nlp_utils.dataset_vocab.sample_build_vocab import get_built_vocab
 
 
@@ -39,8 +39,8 @@ def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
     # get vocab and index data
 
     pickle_root = "./process_data/pickle_dataset"
-    trainset = get_dataset_pickle(dataset_name=dataset, client_id=client_id, dataset_type='train', pickle_root=pickle_root)
-    testset = get_dataset_pickle(dataset_name=dataset, client_id=client_id, dataset_type='test', pickle_root=pickle_root)
+    trainset = get_dataset_pickle(dataset_name=dataset, client_id=300, dataset_type='train', pickle_root=pickle_root)
+    testset = get_dataset_pickle(dataset_name=dataset, client_id=300, dataset_type='test', pickle_root=pickle_root)
 
     # get vocab and index data
     if dataset == 'sent140':
@@ -70,5 +70,6 @@ def get_LEAF_all_test_dataloader(dataset: str):
     Returns:
         ConcatDataset for all clients' test dataset
     """
-    all_testset = get_LEAF_all_test_dataloader(dataset=dataset)
+    pickle_root = "./process_data/pickle_dataset"
+    all_testset = get_all_dataset_pickle(dataset_name=dataset, dataset_type='test', pickle_root=pickle_root)
     return all_testset
