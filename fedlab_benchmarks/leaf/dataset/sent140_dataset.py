@@ -34,16 +34,15 @@ class Sent140Dataset(Dataset):
         self.tokenizer = tokenizer if tokenizer else Tokenizer('normal')
         self.maxlen = None
 
-        self._get_client_data_target()
+        self._process_data_target()
         if is_to_tokens:
             self._data2token()
 
     def _process_data_target(self):
         """process client's data and target
         """
-        data = [e[4] for e in self.data]
-        targets = torch.tensor(self.targets, dtype=torch.long)
-        return data, targets
+        self.data = [e[4] for e in self.data]
+        self.targets = torch.tensor(self.targets, dtype=torch.long)
 
     def _data2token(self):
         assert self.data is not None
