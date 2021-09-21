@@ -33,7 +33,7 @@ class ShakespeareDataset(Dataset):
         self.ALL_LETTERS, self.VOCAB_SIZE = self._build_vocab()
         self.data = data
         self.targets = targets
-        self._process_data_target(data, targets)
+        self._process_data_target()
 
     def _build_vocab(self):
         """ according all letters to build vocab

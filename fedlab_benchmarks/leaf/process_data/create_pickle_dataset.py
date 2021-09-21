@@ -30,7 +30,7 @@ def save_dataset_pickle(save_root: Path, dataset_name: str, user_idx: int, datas
     """
     save_dir = save_root / dataset_name / dataset_type
     save_dir.mkdir(parents=True, exist_ok=True)
-    with open(save_dir / f"{dataset_type}_{str(user_idx)}.pickle", "wb") as save_file:
+    with open(save_dir / f"{dataset_type}_{str(user_idx)}.pkl", "wb") as save_file:
         pickle.dump(dataset, save_file)
 
 
@@ -145,7 +145,7 @@ if __name__ == "__main__":
         type=str,
         required=True,
         help="""Root folder where dataset will be save as
-                {save_root}/{dataset_name}/{train,test}/{client_id}.pickle""",
+                {save_root}/{dataset_name}/{train,test}/{client_id}.pkl""",
     )
     parser.add_argument(
         "--dataset_name",
