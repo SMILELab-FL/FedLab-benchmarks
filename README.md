@@ -1,5 +1,5 @@
 # FedLab-benchmarks
-This repo contains standard implementations of FedLab and its provided benchmarks. 
+This repo contains standard FL algorithm implementations and FL benchmarks using [FedLab](https://github.com/SMILELab-FL/FedLab). 
 
 Currently, following algorithms or benchrmarks are available：
 
@@ -7,7 +7,7 @@ Currently, following algorithms or benchrmarks are available：
 - [x] FedAsync: [Asynchronous Federated Optimization](http://arxiv.org/abs/1903.03934)
 - [x] LEAF: [A Benchmark for Federated Settings](http://arxiv.org/abs/1812.01097)
 
-Working:
+TODO:
 
 - [ ] DGC: [Deep Gradient Compression: Reducing the Communication Bandwidth for Distributed Training](https://arxiv.org/abs/1712.01887)
 - [ ] FedProx: [Federated Optimization in Heterogeneous Networks](https://arxiv.org/abs/1812.06127)
