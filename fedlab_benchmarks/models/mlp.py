@@ -15,11 +15,11 @@
 import torch.nn as nn
 
 
-class Mlp_CelebA(nn.Module):
+class MLP_CelebA(nn.Module):
     """Used for celeba experiment"""
 
     def __init__(self):
-        super(Mlp_CelebA, self).__init__()
+        super(MLP_CelebA, self).__init__()
         self.fc1 = nn.Linear(12288, 2048)  # image_size=64, 64*64*3
         self.relu1 = nn.ReLU()
         self.fc2 = nn.Linear(2048, 500)
@@ -37,9 +37,9 @@ class Mlp_CelebA(nn.Module):
         return x
 
 
-class mlp(nn.Module):
+class MLP(nn.Module):
     def __init__(self, input_size, output_size):
-        super(mlp, self).__init__()
+        super(MLP, self).__init__()
         self.fc1 = nn.Linear(input_size, 200)
         self.fc2 = nn.Linear(200, 200)
         self.fc3 = nn.Linear(200, output_size)

@@ -11,8 +11,6 @@ import torch
 
 torch.manual_seed(0)
 
-
-
 from fedlab.core.client.scale.trainer import SubsetSerialTrainer
 from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.serialization import SerializationTool
@@ -95,9 +93,6 @@ trainer = SubsetSerialTrainer(model=local_model,
                                   "lr": args.lr
                               })
 
-loss_ = []
-acc_ = []
-
 # train procedure
 to_select = [i for i in range(total_client_num)]
 for round in range(args.com_round):
@@ -112,11 +107,3 @@ for round in range(args.com_round):
     criterion = nn.CrossEntropyLoss()
     loss, acc = evaluate(model, criterion, test_loader)
     print("loss: {:.4f}, acc: {:.2f}".format(loss, acc))
-
-    loss_.append(loss)
-    acc_.append(acc)
-
-    write_file(acc_, loss_, args, round + 1)
-
-    if acc >= 0.99:
-        break

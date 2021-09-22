@@ -23,7 +23,7 @@ def get_dataset_pickle(dataset_name: str, client_id: int, dataset_type: str, pic
         if there is no pickle file for `dataset`, throw FileNotFoundError, else return responding dataset
     """
     pickle_root = Path(__file__).parent.resolve() / pickle_root
-    pickle_file = pickle_root / dataset_name / dataset_type / f"{dataset_type}_{client_id}.pickle"
+    pickle_file = pickle_root / dataset_name / dataset_type / f"{dataset_type}_{client_id}.pkl"
     dataset = pickle.load(open(pickle_file, 'rb'))
     return dataset
 
@@ -41,7 +41,7 @@ def get_all_dataset_pickle(dataset_name: str, dataset_type: str, pickle_root: st
     pickle_root = Path(__file__).parent.resolve() / pickle_root
     pickle_files_path = pickle_root / dataset_name / dataset_type
     dataset_list = []
-    for file in list(pickle_files_path.glob("**/*.pickle")):
+    for file in list(pickle_files_path.glob("**/*.pkl")):
         dataset_list.append(pickle.load(open(file, 'rb')))
     all_dataset = ConcatDataset(dataset_list)
     return all_dataset

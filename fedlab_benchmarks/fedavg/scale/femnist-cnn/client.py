@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 
 torch.manual_seed(0)
 
-from fedlab.core.client.scale.trainer import SubsetSerialTrainer
+from fedlab.core.client.scale.trainer import SerialTrainer
 from fedlab.core.client.scale.manager import ScaleClientPassiveManager
 from fedlab.core.network import DistNetwork
 from fedlab.utils.serialization import SerializationTool
@@ -20,12 +20,58 @@ from fedlab.utils.functional import load_dict
 
 sys.path.append("../../../")
 from models.cnn import CNN_FEMNIST, AlexNet_CIFAR10, CNN_MNIST
+from leaf.dataloader import get_LEAF_dataloader
+
+
+class FEMNISTTrainer(SerialTrainer):
+    def __init__(self,
+                 model,
+                 client_num,
+                 aggregator,
+                 cuda=True,
+                 logger=None,
+                 args=None):
+        super().__init__(model,
+                         client_num,
+                         aggregator,
+                         cuda=cuda,
+                         logger=logger)
+        self.args = args
+
+    def _get_dataloader(self, client_id):
+        trainloader, _ = get_LEAF_dataloader("femnist", client_id=client_id)
+        return trainloader
+
+    def _train_alone(self, model_parameters, train_loader):
+
+        epochs, lr = self.args["epochs"], self.args["lr"]
+        SerializationTool.deserialize_model(self._model, model_parameters)
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(self._model.parameters(), lr=lr)
+        self._model.train()
+
+        for _ in range(epochs):
+            for data, target in train_loader:
+                if self.cuda:
+                    data = data.cuda(self.gpu)
+                    target = target.cuda(self.gpu)
+
+                output = self.model(data)
+
+                loss = criterion(output, target)
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+        return self.model_parameters
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Distbelief training example")
 
     parser.add_argument("--ip", type=str, default="127.0.0.1")
-    parser.add_argument("--port", type=str, default="3003")
+    parser.add_argument("--port", type=str, default="3002")
     parser.add_argument("--world_size", type=int)
     parser.add_argument("--rank", type=int)
 
@@ -41,38 +87,6 @@ if __name__ == "__main__":
     else:
         args.cuda = False
 
-    transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465),
-                             (0.2023, 0.1994, 0.2010))
-    ])
-    trainset = torchvision.datasets.CIFAR10(
-        root='../../../datasets/cifar10/',
-        train=True,
-        download=True,
-        transform=transform_train)
-
-    if args.partition == "noniid":
-        data_indices = load_dict("cifar10_noniid.pkl")
-    elif args.partition == "iid":
-        data_indices = load_dict("cifar10_iid.pkl")
-    else:
-        raise ValueError("invalid partition type ", args.partition)
-
-    # Process rank x represent client id from (x-1)*10 - (x-1)*10 +10
-    # e.g. rank 5 <--> client 40-50
-    client_id_list = [
-        i for i in range((args.rank - 1) * 10, (args.rank - 1) * 10 + 10)
-    ]
-
-    # get corresponding data partition indices
-    sub_data_indices = {
-        idx: data_indices[cid]
-        for idx, cid in enumerate(client_id_list)
-    }
-
     model = CNN_FEMNIST()
 
     aggregator = Aggregators.fedavg_aggregate
@@ -82,15 +96,14 @@ if __name__ == "__main__":
                           rank=args.rank,
                           ethernet=args.ethernet)
 
-    trainer = SubsetSerialTrainer(model=model,
-                                  dataset=trainset,
-                                  data_slices=sub_data_indices,
-                                  aggregator=aggregator,
-                                  args={
-                                      "batch_size": 100,
-                                      "lr": 0.001,
-                                      "epochs": 5
-                                  })
+    trainer = FEMNISTTrainer(model=model,
+                             client_num=359,
+                             aggregator=aggregator,
+                             args={
+                                 "batch_size": 100,
+                                 "lr": 0.001,
+                                 "epochs": 5
+                             })
 
     manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
 

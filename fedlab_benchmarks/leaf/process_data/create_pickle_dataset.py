@@ -9,10 +9,11 @@ from pathlib import Path
 from typing import Any, Dict, List
 from torchvision import transforms
 import sys
-
-sys.path.append("../../../")
-
 from torch.utils.data.dataset import Dataset
+
+
+# for pickle 
+sys.path.append("../../../")
 from fedlab_benchmarks.leaf.dataset.femnist_dataset import FemnistDataset
 from fedlab_benchmarks.leaf.dataset.shakespeare_dataset import ShakespeareDataset
 from fedlab_benchmarks.leaf.dataset.celeba_dataset import CelebADataset

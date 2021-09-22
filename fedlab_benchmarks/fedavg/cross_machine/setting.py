@@ -9,7 +9,7 @@ sys.path.append('../../')
 
 from models.cnn import CNN_CIFAR10, CNN_FEMNIST, CNN_MNIST
 from models.rnn import RNN_Shakespeare
-from models.mlp import Mlp_CelebA
+from models.mlp import MLP_CelebA
 from leaf.dataloader import get_LEAF_dataloader
 
 def get_dataset(args):
@@ -44,7 +44,6 @@ def get_dataset(args):
                                                  batch_size=int(
                                                      len(testset) / 10),
                                                  drop_last=False,
-                                                 num_workers=2,
                                                  shuffle=False)
     elif args.dataset == 'femnist':
         trainloader, testloader = get_LEAF_dataloader(dataset=args.dataset,
@@ -69,7 +68,7 @@ def get_model(args):
     elif args.dataset == 'shakespeare':
         model = RNN_Shakespeare()
     elif args.dataset == 'celeba':
-        model = Mlp_CelebA()
+        model = MLP_CelebA()
     else:
         raise ValueError("Invalid dataset:", args.dataset)
 
