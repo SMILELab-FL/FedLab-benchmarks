@@ -33,7 +33,7 @@ class ScaleSynchronousManager(ServerSynchronousManager):
 
     def __init__(self, network, handler):
         super().__init__(network, handler)
-        self.curr_round = -1
+        self.curr_round = 0
 
     def activate_clients(self):
         """Add client id map"""
@@ -46,7 +46,7 @@ class ScaleSynchronousManager(ServerSynchronousManager):
 
             # Send parameters
             param_pack = Package(message_code=MessageCode.ParameterUpdate,
-                                 content=self._handler.model_parameters)
+                                 content=[self.curr_round, self._handler.model_parameters])
             PackageProcessor.send_package(package=param_pack, dst=rank)
 
             # Send activate id list

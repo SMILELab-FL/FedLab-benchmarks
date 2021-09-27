@@ -24,16 +24,69 @@ from config import cifar10_config, balance_iid_data_config
 import sys
 
 sys.path.append("../../../FedLab/")
+from fedlab.core.client import SERIAL_TRAINER, ORDINARY_TRAINER
 from fedlab.core.client.scale.trainer import SubsetSerialTrainer
-from fedlab.core.client.scale.manager import ScaleClientPassiveManager
+from fedlab.core.client.manager import ClientPassiveManager
 from fedlab.core.network import DistNetwork
+from fedlab.core.communicator import Package, PackageProcessor
 
-from fedlab.utils.serialization import SerializationTool
+from fedlab.utils import MessageCode, SerializationTool, Aggregators
 from fedlab.utils.logger import Logger
-from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.functional import load_dict
 from fedlab.utils.dataset import functional as dataF
 
+
+class FedDynScaleClientPassiveManager(ClientPassiveManager):
+    """Special client manager for :class:`SerialTrainer`.
+
+    We modify the communication agreements creating mapping between process rank and client id.
+    In this way, :class:`Manager` is able to represent multiple clients.
+    Args:
+        network (DistNetwork): Distributed network to use.
+        handler (ClientTrainer): Subclass of :class:`ClientTrainer`, providing :meth:`train` and :attr:`model`.
+    """
+
+    def __init__(self, network, trainer):
+        super().__init__(network, trainer)
+        # only after receiving first package from server,
+        # curr_round will begin to update
+        self.curr_round = -1
+
+    def on_receive(self, sender_rank, message_code, payload):
+        """Actions to perform when receiving new message, including local training
+        .. note::
+            Customize the control flow of client corresponding with :class:`MessageCode`.
+        Args:
+            sender_rank (int): Rank of sender
+            message_code (MessageCode): Agreements code defined in :class:`MessageCode`
+            payload (list[torch.Tensor]): A list of tensors received from sender.
+        """
+        if message_code == MessageCode.ParameterUpdate:
+            self.curr_round = int(payload[0])
+            model_parameters = payload[1]
+
+            _, message_code, payload = PackageProcessor.recv_package(src=0)
+            id_list = payload[0].tolist()
+
+            # check the trainer type
+            if self._trainer.type == SERIAL_TRAINER:
+                self.model_parameters_list = self._trainer.train(
+                    model_parameters=model_parameters,
+                    id_list=id_list,
+                    curr_round=self.curr_round,
+                    aggregate=False)
+            elif self._trainer.type == ORDINARY_TRAINER:
+                self.model_parameters_list = self._trainer.train(
+                    model_parameters=model_parameters)
+
+    def synchronize(self):
+        """Synchronize local model with server actively
+        .. note::
+            Communication agreements related. Overwrite this function to customize package for synchronizing.
+        """
+        pack = Package(message_code=MessageCode.ParameterUpdate,
+                       content=self.model_parameters_list)
+        PackageProcessor.send_package(package=pack, dst=0)
 
 
 class FedDynSerialTrainer(SubsetSerialTrainer):
@@ -55,6 +108,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
         self.global_weight_list = global_weight_list
         self.sub_weight_list = sub_weight_list
         self.sub_alpha_coef_adpt = args['alpha_coef'] / sub_weight_list
+        self.curr_round = -1
 
     def _train_alone(self, model_parameters,
                      client_id,
@@ -126,7 +180,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
 
         return self.model_parameters
 
-    def train(self, model_parameters, id_list, aggregate=False):
+    def train(self, model_parameters, id_list, curr_round, aggregate=False):
         """Train local model with different dataset according to :attr:`idx` in :attr:`id_list`.
         Args:
             model_parameters (torch.Tensor): Serialized model parameters.
@@ -139,20 +193,21 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
         Returns:
             Serialized model parameters / list of model parameters.
         """
+        self.curr_round = curr_round  # set current training round
         param_list = []
         args = self.args
         self._LOGGER.info(
-            "Local training with client id list: {}".format(id_list))
+            "[Round {}] Local training with client id list: {}".format(curr_round, id_list))
         for idx in id_list:
             self._LOGGER.info(
-                "Starting training procedure of client [{}]".format(idx))
+                "[Round {}] Starting training procedure of client [{}]".format(curr_round, idx))
 
             data_loader = self._get_dataloader(client_id=idx)
             self._train_alone(model_parameters=model_parameters,
                               train_loader=data_loader,
                               client_id=idx,
                               client_sample_num=self.data_slices[idx].shape[0],
-                              lr=args['lr'] * (args['lr_decay_per_round'] ** comm_round),
+                              lr=args['lr'] * (args['lr_decay_per_round'] ** curr_round),
                               alpha_coef=self.sub_alpha_coef_adpt[idx],
                               weight_decay=args["weight_decay"])
             param_list.append(self.model_parameters)
@@ -163,5 +218,3 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             return aggregated_parameters
         else:
             return param_list
-
-
