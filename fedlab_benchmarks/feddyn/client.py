@@ -4,10 +4,13 @@
 # @Contact : zszxlsq@gmail.com
 # @File    : client.py
 # @Software: PyCharm
-import torch
+
 import argparse
 import os
 
+import numpy as np
+
+import torch
 from torch import nn
 import torch.nn.functional as F
 import torchvision
@@ -16,7 +19,7 @@ import torchvision.transforms as transforms
 torch.manual_seed(0)
 
 import models
-from config import cifar10_config, balance_iid_data_config, balance_iid_data_config
+from config import cifar10_config, balance_iid_data_config
 
 import sys
 
@@ -29,74 +32,136 @@ from fedlab.utils.serialization import SerializationTool
 from fedlab.utils.logger import Logger
 from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.functional import load_dict
+from fedlab.utils.dataset import functional as dataF
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="FedDyn implementation: Client scale mode")
 
-    parser.add_argument("--ip", type=str, default="127.0.0.1")
-    parser.add_argument("--port", type=str, default="3003")
-    parser.add_argument("--world_size", type=int)
-    parser.add_argument("--rank", type=int)
-    parser.add_argument("--num-client-per-rank", type=int, default=10)
-    parser.add_argument("--ethernet", type=str, default=None)
 
-    parser.add_argument("--setting", type=str)
-    args = parser.parse_args()
+class FedDynSerialTrainer(SubsetSerialTrainer):
+    # no need to rewrite __init__
+    def __init__(self, model, dataset, data_slices,
+                 aggregator=None,
+                 logger=None,
+                 global_weight_list=None,
+                 sub_weight_list=None,
+                 cuda=True,
+                 args=None):
+        super(FedDynSerialTrainer, self).__init__(model=model,
+                                                  dataset=dataset,
+                                                  data_slices=data_slices,
+                                                  aggregator=aggregator,
+                                                  logger=logger,
+                                                  cuda=cuda,
+                                                  args=args)
+        self.global_weight_list = global_weight_list
+        self.sub_weight_list = sub_weight_list
+        self.sub_alpha_coef_adpt = args['alpha_coef'] / sub_weight_list
 
-    if args.setting == 'iid':
-        alg_config = cifar10_config
-        data_config = balance_iid_data_config
-    else:
-        config = None
+    def _train_alone(self, model_parameters,
+                     client_id,
+                     train_loader,
+                     client_sample_num,
+                     lr,
+                     alpha_coef,
+                     weight_decay):
+        """Single round of local training for one client.
+        Note:
+            Overwrite this method to customize the PyTorch training pipeline.
+        Args:
+            model_parameters (torch.Tensor): model parameters.
+            train_loader (torch.utils.data.DataLoader): dataloader for data iteration.
+            client_sample_num (int): sample number for current client
+        """
+        args = self.args
+        epochs, lr = args['epochs'], args['lr']
+        SerializationTool.deserialize_model(self._model, model_parameters)
+        loss_fn = torch.nn.CrossEntropyLoss(reduction='sum')  # loss function
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+        optimizer = torch.optim.SGD(self._model.parameters(), lr=lr,
+                                    weight_decay=alpha_coef + weight_decay)
+        self._model.train()
 
-    transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465),
-                             (0.2023, 0.1994, 0.2010))
-    ])
-    trainset = torchvision.datasets.CIFAR10(
-        root='../../../datasets/cifar10/',
-        train=True,
-        download=True,
-        transform=transform_train)
+        for epoch in range(epochs):
+            # Training
+            epoch_loss = 0
+            for data, target in train_loader:
+                if self.cuda:
+                    data = data.cuda(self.gpu)
+                    target = target.cuda(self.gpu)
 
-    if data_config['partition'] == "noniid":
-        data_indices = load_dict("cifar10_noniid.pkl")
-    if data_config['partition'] == "iid":
-        data_indices = load_dict("cifar10_iid.pkl")
+                y_pred = self._model(data)
 
-    # Process rank x represent client id from (x-1)*10 - (x-1)*10 +10
-    # e.g. rank 5 <--> client 40-50
-    client_id_list = [
-        i for i in
-        range((args.rank - 1) * args.num_client_per_rank, args.rank * args.num_client_per_rank)
-    ]
+                ## Get f_i estimate
+                loss_f_i = loss_fn(y_pred, target.reshape(-1).long())
+                loss_f_i = loss_f_i / list(target.size())[0]
 
-    # get corresponding data partition indices
-    sub_data_indices = {
-        idx: data_indices[cid]
-        for idx, cid in enumerate(client_id_list)
-    }
+                # Get linear penalty on the current parameter estimates
+                local_par_list = None
+                for param in self._model.parameters():
+                    if not isinstance(local_par_list, torch.Tensor):
+                        # Initially nothing to concatenate
+                        local_par_list = param.reshape(-1)
+                    else:
+                        local_par_list = torch.cat((local_par_list, param.reshape(-1)), 0)
 
-    model = AlexNet_CIFAR10()
+                loss_algo = args['alpha_coef'] * torch.sum(
+                    local_par_list * (- avg_mdl_param + local_grad_vector))
+                loss = loss_f_i + loss_algo
 
-    aggregator = Aggregators.fedavg_aggregate
+                optimizer.zero_grad()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(parameters=model.parameters(),
+                                               max_norm=args['max_norm'])  # Clip gradients
+                optimizer.step()
+                epoch_loss += loss.item() * list(target.size())[0]
 
-    network = DistNetwork(address=(args.ip, args.port),
-                          world_size=args.world_size,
-                          rank=args.rank,
-                          ethernet=args.ethernet)
+            if (epoch + 1) % args['print_per'] == 0:
+                epoch_loss /= client_sample_num
+                if args['weight_decay'] is not None:
+                    # Add L2 loss to complete f_i
+                    params = self.model_parameters
+                    epoch_loss += (alpha_coef + weight_decay) / 2 * torch.sum(
+                        params * params)
+                print("Epoch %3d, Training Loss: %.4f" % (epoch + 1, epoch_loss))
+                model.train()
 
-    trainer = SubsetSerialTrainer(model=model,
-                                  dataset=trainset,
-                                  data_slices=sub_data_indices,
-                                  aggregator=aggregator,
-                                  args=config)
+        return self.model_parameters
 
-    manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
+    def train(self, model_parameters, id_list, aggregate=False):
+        """Train local model with different dataset according to :attr:`idx` in :attr:`id_list`.
+        Args:
+            model_parameters (torch.Tensor): Serialized model parameters.
+            id_list (list[int]): Client id in this training serial.
+            aggregate (bool): Whether to perform partial aggregation on this group of clients' local model in the end of local training round.
+        Note:
+            Normally, aggregation is performed by server, while we provide :attr:`aggregate` option here to perform
+            partial aggregation on current client group. This partial aggregation can reduce the aggregation workload
+            of server.
+        Returns:
+            Serialized model parameters / list of model parameters.
+        """
+        param_list = []
+        args = self.args
+        self._LOGGER.info(
+            "Local training with client id list: {}".format(id_list))
+        for idx in id_list:
+            self._LOGGER.info(
+                "Starting training procedure of client [{}]".format(idx))
 
-    manager_.run()
+            data_loader = self._get_dataloader(client_id=idx)
+            self._train_alone(model_parameters=model_parameters,
+                              train_loader=data_loader,
+                              client_id=idx,
+                              client_sample_num=self.data_slices[idx].shape[0],
+                              lr=args['lr'] * (args['lr_decay_per_round'] ** comm_round),
+                              alpha_coef=self.sub_alpha_coef_adpt[idx],
+                              weight_decay=args["weight_decay"])
+            param_list.append(self.model_parameters)
+
+        if aggregate is True and self.aggregator is not None:
+            # aggregate model parameters of this client group
+            aggregated_parameters = self.aggregator(param_list)
+            return aggregated_parameters
+        else:
+            return param_list
+
+

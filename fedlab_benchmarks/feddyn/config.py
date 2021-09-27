@@ -6,7 +6,7 @@
 # @Software: PyCharm
 
 cifar10_config = {
-    'n_client': 100,
+    'num_clients': 100,
     'model_name': 'Cifar10Net',  # Model type
     'com_amount': 1000,
     'save_period': 200,
@@ -15,9 +15,10 @@ cifar10_config = {
     'act_prob': 1,
     'lr_decay_per_round': 1,
     'epoch': 5,
-    'learning_rate': 0.1,
+    'lr': 0.1,
     'print_per': 5,
     'alpha_coef': 1e-2,
+    'max_norm': 10,
 }
 
 balance_iid_data_config = {
