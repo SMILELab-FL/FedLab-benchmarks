@@ -16,7 +16,7 @@ import torchvision.transforms as transforms
 torch.manual_seed(0)
 
 import models
-from config import cifar10_config
+from config import cifar10_config, balance_iid_data_config, balance_iid_data_config
 
 import sys
 
@@ -37,13 +37,15 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=str, default="3003")
     parser.add_argument("--world_size", type=int)
     parser.add_argument("--rank", type=int)
+    parser.add_argument("--num-client-per-rank", type=int, default=10)
     parser.add_argument("--ethernet", type=str, default=None)
 
     parser.add_argument("--setting", type=str)
     args = parser.parse_args()
 
     if args.setting == 'iid':
-        config = cifar10_config
+        alg_config = cifar10_config
+        data_config =
     else:
         config = None
 
@@ -79,7 +81,6 @@ if __name__ == "__main__":
         for idx, cid in enumerate(client_id_list)
     }
 
-    # model = CNN_Cifar10()
     model = AlexNet_CIFAR10()
 
     aggregator = Aggregators.fedavg_aggregate

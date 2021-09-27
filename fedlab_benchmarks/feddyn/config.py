@@ -6,13 +6,23 @@
 # @Software: PyCharm
 
 cifar10_config = {
-    # "partition": "iid",
-    # "round": 4000,
-    # "network": "alexnet",
-    # "sample_ratio": 0.1,
-    # "dataset": "cifar10",
-    # "total_client_num": 100,
-    # "lr": 0.1,
-    # "batch_size": 100,
-    # "epochs": 5
+    'n_client': 100,
+    'model_name': 'Cifar10Net',  # Model type
+    'com_amount': 1000,
+    'save_period': 200,
+    'weight_decay': 1e-3,
+    'batch_size': 50,
+    'act_prob': 1,
+    'lr_decay_per_round': 1,
+    'epoch': 5,
+    'learning_rate': 0.1,
+    'print_per': 5,
+    'alpha_coef': 1e-2,
+}
+
+balance_iid_data_config = {
+    'partition': "iid",
+    'balance': True,
+    'dataset': 'cifar10',
+    'num-clients': 100,
 }
