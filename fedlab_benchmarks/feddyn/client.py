@@ -128,7 +128,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
         args = self.args
         epochs, lr = args['epochs'], args['lr']
         SerializationTool.deserialize_model(self._model, model_parameters)
-        loss_fn = torch.nn.CrossEntropyLoss(reduction='sum')  # loss function
+        loss_fn = nn.CrossEntropyLoss(reduction='sum')  # loss function
 
         optimizer = torch.optim.SGD(self._model.parameters(), lr=lr,
                                     weight_decay=alpha_coef + weight_decay)
@@ -163,8 +163,8 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
 
                 optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(parameters=model.parameters(),
-                                               max_norm=args['max_norm'])  # Clip gradients
+                nn.utils.clip_grad_norm_(parameters=model.parameters(),
+                                         max_norm=args['max_norm'])  # Clip gradients
                 optimizer.step()
                 epoch_loss += loss.item() * list(target.size())[0]
 
