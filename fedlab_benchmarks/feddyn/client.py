@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     if args.setting == 'iid':
         alg_config = cifar10_config
-        data_config =
+        data_config = balance_iid_data_config
     else:
         config = None
 
@@ -64,15 +64,16 @@ if __name__ == "__main__":
         download=True,
         transform=transform_train)
 
-    if config['partition'] == "noniid":
+    if data_config['partition'] == "noniid":
         data_indices = load_dict("cifar10_noniid.pkl")
-    if config['partition'] == "iid":
+    if data_config['partition'] == "iid":
         data_indices = load_dict("cifar10_iid.pkl")
 
     # Process rank x represent client id from (x-1)*10 - (x-1)*10 +10
     # e.g. rank 5 <--> client 40-50
     client_id_list = [
-        i for i in range((args.rank - 1) * 10, (args.rank - 1) * 10 + 10)
+        i for i in
+        range((args.rank - 1) * args.num_client_per_rank, args.rank * args.num_client_per_rank)
     ]
 
     # get corresponding data partition indices
