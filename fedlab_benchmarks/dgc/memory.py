@@ -1,3 +1,7 @@
+"""
+codes are modified from https://github.com/synxlin/deep-gradient-compression
+"""
+
 import torch
 
 class Memory:

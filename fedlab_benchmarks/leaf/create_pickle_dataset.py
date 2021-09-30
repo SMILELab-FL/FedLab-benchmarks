@@ -8,17 +8,10 @@ import pickle
 from pathlib import Path
 from typing import Any, Dict, List
 from torchvision import transforms
-import sys
 from torch.utils.data.dataset import Dataset
 
-
 # for pickle 
-sys.path.append("../../../")
-from fedlab_benchmarks.leaf.dataset.femnist_dataset import FemnistDataset
-from fedlab_benchmarks.leaf.dataset.shakespeare_dataset import ShakespeareDataset
-from fedlab_benchmarks.leaf.dataset.celeba_dataset import CelebADataset
-from fedlab_benchmarks.leaf.dataset.sent140_dataset import Sent140Dataset
-
+from dataset import FemnistDataset, ShakespeareDataset, CelebADataset, Sent140Dataset
 
 def save_dataset_pickle(save_root: Path, dataset_name: str, user_idx: int, dataset_type: str, dataset: Dataset):
     """Saves partition for specific client
@@ -77,7 +70,7 @@ def process_user(
                                 client_str=user_str,
                                 data=data,
                                 targets=label,
-                                image_root="../../datasets/celeba/data/raw/img_align_celeba",
+                                image_root="../datasets/celeba/data/raw/img_align_celeba",
                                 transform=image_transform)
     elif dataset_name == "sent140":
         dataset = Sent140Dataset(client_id=user_idx,
@@ -128,7 +121,7 @@ def split_json_and_save(
 
 
 # Example:
-# python create_pickle_dataset.py --data_root "../../datasets" --save_root "./pickle_dataset" --dataset_name "shakespeare"
+# python create_pickle_dataset.py --data_root "../datasets" --save_root "./pickle_dataset" --dataset_name "shakespeare"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="""download and process a LEAF Shakespeare train/test dataset,

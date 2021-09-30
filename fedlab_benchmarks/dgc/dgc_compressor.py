@@ -1,5 +1,6 @@
-# codes below are copy from https://github.com/synxlin/deep-gradient-compression
-# modified by fedlab developer
+"""
+codes are modified from https://github.com/synxlin/deep-gradient-compression
+"""
 
 import math
 import torch
