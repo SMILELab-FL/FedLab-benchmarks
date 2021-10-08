@@ -2,7 +2,7 @@ import argparse
 
 import sys
 
-sys.path.append('../../../../FedLab/')
+sys.path.append('../../../FedLab/')
 
 from fedlab.utils.dataset import FMNISTPartitioner
 from fedlab.utils.functional import save_dict
@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=2021)
     args = parser.parse_args()
 
-    root = "../../../../datasets/FMNIST"
+    root = "../../../datasets/FMNIST"
     trainset = FashionMNIST(root=root, train=True, download=True)
 
     # perform partition

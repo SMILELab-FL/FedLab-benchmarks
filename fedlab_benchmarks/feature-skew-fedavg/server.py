@@ -105,7 +105,7 @@ if __name__ == "__main__":
     transform_test = transforms.Compose([transforms.ToTensor()])
 
     testset = torchvision.datasets.FashionMNIST(
-        root='../../../../datasets/FMNIST/',
+        root='../../../datasets/FMNIST/',
         train=False,
         download=True,
         transform=transform_test)

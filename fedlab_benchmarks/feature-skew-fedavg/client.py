@@ -24,7 +24,7 @@ from fedlab.utils.dataset.sampler import SubsetSampler
 
 import sys
 
-sys.path.append("../../../")
+sys.path.append("../../../FedLab")
 from .models import SimpleCNNMNIST
 
 from config import fmnist_noise_baseline_config
@@ -95,7 +95,7 @@ class FeatureSkewTrainer(SubsetSerialTrainer):
 
         transform_train = transforms.Compose([transforms.ToTensor(),
                                               AddGaussianNoise(0., noise_level)])
-        self.dataset = self.dataset_obj(root='../../../../datasets/FMNIST/',
+        self.dataset = self.dataset_obj(root='../../../datasets/FMNIST/',
                                         train=True,
                                         download=True,
                                         transform=transform_train)
