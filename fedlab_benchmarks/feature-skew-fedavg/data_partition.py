@@ -26,4 +26,4 @@ if __name__ == '__main__':
                                   num_clients=args.num_clients,
                                   partition="iid",
                                   seed=args.seed)
-    save_dict(partition.client_dict, "fmnist_homo.pkl")
+    save_dict(partition.client_dict, "fmnist_iid.pkl")

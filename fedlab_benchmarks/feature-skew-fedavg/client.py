@@ -27,7 +27,7 @@ import sys
 sys.path.append("../../../")
 from .models import SimpleCNNMNIST
 
-from config import fmnist_homo_baseline_config
+from config import fmnist_noise_baseline_config
 
 
 class AddGaussianNoise(object):
@@ -144,15 +144,15 @@ if __name__ == "__main__":
     parser.add_argument("--noise", typr=float, default=0.1)
     parser.add_argument("--ethernet", type=str, default=None)
 
-    parser.add_argument("--setting", type=str, default='homo')
+    parser.add_argument("--setting", type=str, default='noise')
     args = parser.parse_args()
 
-    config = fmnist_homo_baseline_config
+    config = fmnist_noise_baseline_config
 
     os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
-    if args.setting == 'homo':
-        data_indices = load_dict("fmnist_homo.pkl")
+    if args.setting == 'noise':
+        data_indices = load_dict("fmnist_iid.pkl")
 
     # Process rank x represent client id from (x-1) * client_num_per_rank - x * client_num_per_rank
     # e.g. rank 5 <--> client 40-50

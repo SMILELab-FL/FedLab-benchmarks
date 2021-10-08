@@ -18,7 +18,7 @@ import sys
 sys.path.append("../../../")
 from .models import SimpleCNNMNIST
 
-from config import fmnist_homo_baseline_config
+from config import fmnist_noise_baseline_config
 
 
 def evaluate(model, criterion, test_loader):
@@ -45,8 +45,8 @@ def evaluate(model, criterion, test_loader):
 
 def write_file(acces, losses, config):
     record = open(
-        "{}_{}_{}.txt".format(config['partition'], config['network'],
-                              config['dataset']), "w")
+        "noise_{}_{}_{}.txt".format(config['partition'], config['network'],
+                                    config['dataset']), "w")
 
     record.write(str(config) + "\n")
     record.write(str(losses) + "\n")
@@ -95,12 +95,12 @@ if __name__ == "__main__":
     parser.add_argument('--world_size', type=int, default=2)
     parser.add_argument('--ethernet', type=str, default=None)
 
-    parser.add_argument('--setting', type=str, default='homo')
+    parser.add_argument('--setting', type=str, default='noise')
     args = parser.parse_args()
 
     model = SimpleCNNMNIST(input_dim=(16 * 4 * 4), hidden_dims=[120, 84], output_dim=10)
 
-    config = fmnist_homo_baseline_config
+    config = fmnist_noise_baseline_config
 
     transform_test = transforms.Compose([transforms.ToTensor()])
 

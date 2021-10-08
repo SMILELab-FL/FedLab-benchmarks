@@ -1,7 +1,7 @@
-fmnist_homo_baseline_config = {
+fmnist_noise_baseline_config = {
     "partition": "homo",
     "round": 50,
-    "network": "cnn",
+    "network": "simple-cnn",
     "sample_ratio": 1,
     "dataset": "fmnist",
     "total_client_num": 10,
