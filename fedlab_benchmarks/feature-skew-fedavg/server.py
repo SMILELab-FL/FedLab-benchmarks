@@ -8,17 +8,16 @@ from torchvision import transforms
 
 torch.manual_seed(0)
 
+import sys
+sys.path.append("../../../FedLab")
+
 from fedlab.core.server.handler import SyncParameterServerHandler
 from fedlab.core.server.scale.manager import ScaleSynchronousManager
 from fedlab.core.network import DistNetwork
 from fedlab.utils.functional import AverageMeter
 
-import sys
-
-sys.path.append("../../../")
 from .models import SimpleCNNMNIST
-
-from config import fmnist_noise_baseline_config
+from .config import fmnist_noise_baseline_config
 
 
 def evaluate(model, criterion, test_loader):

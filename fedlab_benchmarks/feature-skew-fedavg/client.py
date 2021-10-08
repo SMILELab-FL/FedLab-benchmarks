@@ -11,6 +11,9 @@ import torchvision.transforms as transforms
 
 torch.manual_seed(0)
 
+import sys
+sys.path.append("../../../FedLab")
+
 from fedlab.core.client import SERIAL_TRAINER
 from fedlab.core.client.scale.trainer import SubsetSerialTrainer
 from fedlab.core.client.scale.manager import ScaleClientPassiveManager
@@ -22,12 +25,8 @@ from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.functional import load_dict
 from fedlab.utils.dataset.sampler import SubsetSampler
 
-import sys
-
-sys.path.append("../../../FedLab")
 from .models import SimpleCNNMNIST
-
-from config import fmnist_noise_baseline_config
+from .config import fmnist_noise_baseline_config
 
 
 class AddGaussianNoise(object):
