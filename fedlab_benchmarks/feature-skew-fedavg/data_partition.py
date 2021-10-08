@@ -18,7 +18,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=2021)
     args = parser.parse_args()
 
-    root = "../../../../data/FMNIST"
+    root = "../../../../datasets/FMNIST"
     trainset = FashionMNIST(root=root, train=True, download=True)
 
     # perform partition
