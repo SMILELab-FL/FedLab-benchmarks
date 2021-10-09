@@ -12,6 +12,7 @@ import torchvision.transforms as transforms
 torch.manual_seed(0)
 
 import sys
+
 sys.path.append("../../../FedLab")
 
 from fedlab.core.client import SERIAL_TRAINER
@@ -78,7 +79,7 @@ class FeatureSkewTrainer(SubsetSerialTrainer):
                                                  logger=logger,
                                                  cuda=cuda,
                                                  args=args)
-        if args.dataset == 'fmnist':
+        if args['dataset'] == 'fmnist':
             self.dataset_obj = torchvision.datasets.FashionMNIST
 
     def _get_dataloader(self, client_id):
@@ -139,8 +140,8 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=str, default="3003")
     parser.add_argument("--world_size", type=int)
     parser.add_argument("--rank", type=int)
-    parser.add_argument("--client-num-per-rank", typr=int, default=10)
-    parser.add_argument("--noise", typr=float, default=0.1)
+    parser.add_argument("--client-num-per-rank", type=int, default=10)
+    parser.add_argument("--noise", type=float, default=0.1)
     parser.add_argument("--ethernet", type=str, default=None)
 
     parser.add_argument("--setting", type=str, default='noise')
@@ -176,11 +177,11 @@ if __name__ == "__main__":
                           ethernet=args.ethernet)
 
     config['noise'] = args.noise  # add noise to configures
-    trainer = SubsetSerialTrainer(model=model,
-                                  dataset='fmnist',
-                                  data_slices=sub_data_indices,
-                                  aggregator=aggregator,
-                                  args=config)
+    trainer = FeatureSkewTrainer(model=model,
+                                 dataset='fmnist',
+                                 data_slices=sub_data_indices,
+                                 aggregator=aggregator,
+                                 args=config)
 
     manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
 
