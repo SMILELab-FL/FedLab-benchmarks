@@ -6,6 +6,7 @@ Currently, following algorithms or benchrmarks are available：
 - [x] FedAvg: [Communication-Efficient Learning of Deep Networks from Decentralized Data](http://proceedings.mlr.press/v54/mcmahan17a/mcmahan17a.pdf)
 - [x] FedAsync: [Asynchronous Federated Optimization](http://arxiv.org/abs/1903.03934)
 - [x] LEAF: [A Benchmark for Federated Settings](http://arxiv.org/abs/1812.01097)
+- [x] NIID-Bench: [Federated Learning on Non-IID Data Silos: An Experimental Study](https://arxiv.org/abs/2102.02079)
 
 TODO:
 
@@ -15,3 +16,4 @@ TODO:
 ------
 
 We highly welcome you to contribute federated algorithm implemented by FedLab. If you encounter any problems, do not hesitate to submit an issue or send an email to the repo maintainer.
+
