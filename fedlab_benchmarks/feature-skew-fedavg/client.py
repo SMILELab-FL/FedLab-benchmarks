@@ -12,7 +12,6 @@ import torchvision.transforms as transforms
 torch.manual_seed(0)
 
 import sys
-
 sys.path.append("../../../FedLab")
 
 from fedlab.core.client import SERIAL_TRAINER
@@ -25,10 +24,34 @@ from fedlab.utils.logger import Logger
 from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.functional import load_dict
 from fedlab.utils.dataset.sampler import SubsetSampler
+from fedlab.core.communicator.processor import Package, PackageProcessor
+from fedlab.core.coordinator import Coordinator
+from fedlab.utils.functional import AverageMeter
+from fedlab.utils.message_code import MessageCode
 
-from .models import SimpleCNNMNIST
-from .config import fmnist_noise_baseline_config
+from models import SimpleCNNMNIST
+from config import fmnist_noise_baseline_config
 
+
+class Subset(torch.utils.data.Dataset):
+    def __init__(self, dataset, indices, transform=None):
+        self.data, self.targets = [], []
+        for idx in indices:
+            img, label = dataset[idx]
+            self.data.append(img)
+            self.targets.append(label)
+
+        self.transform = transform
+        
+    def __getitem__(self, index):
+        img, label = self.data[index], self.targets[index]
+        if self.transform is not None:
+            img = self.transform(img)
+        
+        return img, label
+
+    def __len__(self):
+        return len(self.targets)
 
 class AddGaussianNoise(object):
     """
@@ -63,6 +86,8 @@ class AddGaussianNoise(object):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
 
+
+
 class FeatureSkewTrainer(SubsetSerialTrainer):
     def __init__(self,
                  model,
@@ -79,32 +104,30 @@ class FeatureSkewTrainer(SubsetSerialTrainer):
                                                  logger=logger,
                                                  cuda=cuda,
                                                  args=args)
-        if args['dataset'] == 'fmnist':
-            self.dataset_obj = torchvision.datasets.FashionMNIST
+        self.complete_dataset = dataset
+        self.client_dataset = dict()
+
+        num_clients = self.args['total_client_num']
+        noise = self.args['noise']
+
+        for cid in range(num_clients):
+            if cid == num_clients - 1:
+                noise_level = 0
+            else:
+                noise_level = noise / num_clients * (cid + 1)  # a little different from original NIID-bench
+            
+            curr_client_dataset = Subset(dataset=self.complete_dataset, 
+                                         indices=self.data_slices[cid],
+                                         transform=AddGaussianNoise(0., noise_level))
+            self.client_dataset[cid] = curr_client_dataset
 
     def _get_dataloader(self, client_id):
         batch_size = self.args["batch_size"]
-        num_clients = self.args['num_clients']
-        noise = self.args['noise']
 
-        if client_id == num_clients - 1:
-            noise_level = 0
-        else:
-            noise_level = noise / num_clients * (
-                    client_id + 1)  # a little different from original NIID-bench
+        # transform_train = transforms.Compose([AddGaussianNoise(0., noise_level)])
 
-        transform_train = transforms.Compose([transforms.ToTensor(),
-                                              AddGaussianNoise(0., noise_level)])
-        self.dataset = self.dataset_obj(root='../../../datasets/FMNIST/',
-                                        train=True,
-                                        download=True,
-                                        transform=transform_train)
-
-        train_loader = torch.utils.data.DataLoader(
-            self.dataset,
-            sampler=SubsetSampler(indices=self.data_slices[client_id],
-                                  shuffle=True),
-            batch_size=batch_size)
+        train_loader = torch.utils.data.DataLoader(self.client_dataset[client_id], 
+                                                   batch_size=batch_size, shuffle=True)
         return train_loader
 
     def _train_alone(self, model_parameters, train_loader):
@@ -169,6 +192,12 @@ if __name__ == "__main__":
 
     model = SimpleCNNMNIST(input_dim=(16 * 4 * 4), hidden_dims=[120, 84], output_dim=10)
 
+    trainset = torchvision.datasets.FashionMNIST(root='../../../datasets/FMNIST/',
+                                                 train=True,
+                                                 download=True,
+                                                 transform=transforms.ToTensor())
+
+
     aggregator = Aggregators.fedavg_aggregate
 
     network = DistNetwork(address=(args.ip, args.port),
@@ -178,10 +207,10 @@ if __name__ == "__main__":
 
     config['noise'] = args.noise  # add noise to configures
     trainer = FeatureSkewTrainer(model=model,
-                                 dataset='fmnist',
-                                 data_slices=sub_data_indices,
-                                 aggregator=aggregator,
-                                 args=config)
+                                  dataset=trainset,
+                                  data_slices=sub_data_indices,
+                                  aggregator=aggregator,
+                                  args=config)
 
     manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
 
