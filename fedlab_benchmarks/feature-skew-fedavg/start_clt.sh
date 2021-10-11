@@ -10,5 +10,6 @@
 # }
 # done
 # wait
-
+python data_partition.py --num-clients 10 --seed 1
+echo -e "New data partition done \n\n"
 python client.py --world_size 2 --rank 1 --noise 0.1
