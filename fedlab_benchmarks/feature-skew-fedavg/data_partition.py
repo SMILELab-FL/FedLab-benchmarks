@@ -2,8 +2,6 @@ import argparse
 
 import sys
 
-sys.path.append('../../../FedLab/')
-
 from fedlab.utils.dataset import FMNISTPartitioner
 from fedlab.utils.functional import save_dict
 

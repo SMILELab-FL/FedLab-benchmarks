@@ -12,7 +12,6 @@ import torchvision.transforms as transforms
 torch.manual_seed(0)
 
 import sys
-sys.path.append("../../../FedLab")
 
 from fedlab.core.client import SERIAL_TRAINER
 from fedlab.core.client.scale.trainer import SubsetSerialTrainer
@@ -34,6 +33,8 @@ from config import fmnist_noise_baseline_config
 
 
 class Subset(torch.utils.data.Dataset):
+    """For data subset with different augmentation.
+    """
     def __init__(self, dataset, indices, transform=None):
         self.data, self.targets = [], []
         for idx in indices:
@@ -42,21 +43,22 @@ class Subset(torch.utils.data.Dataset):
             self.targets.append(label)
 
         self.transform = transform
-        
+
     def __getitem__(self, index):
         img, label = self.data[index], self.targets[index]
         if self.transform is not None:
             img = self.transform(img)
-        
+
         return img, label
 
     def __len__(self):
         return len(self.targets)
 
+
 class AddGaussianNoise(object):
     """
     This transform function is from NIID-bench official code:
-
+    https://github.com/Xtra-Computing/NIID-Bench
     """
 
     def __init__(self, mean=0., std=1., net_id=None, total=0):
@@ -86,8 +88,6 @@ class AddGaussianNoise(object):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
 
 
-
-
 class FeatureSkewTrainer(SubsetSerialTrainer):
     def __init__(self,
                  model,
@@ -114,19 +114,17 @@ class FeatureSkewTrainer(SubsetSerialTrainer):
             if cid == num_clients - 1:
                 noise_level = 0
             else:
-                noise_level = noise / num_clients * (cid + 1)  # a little different from original NIID-bench
-            
-            curr_client_dataset = Subset(dataset=self.complete_dataset, 
+                noise_level = noise / num_clients * (
+                            cid + 1)  # a little different from original NIID-bench
+
+            curr_client_dataset = Subset(dataset=self.complete_dataset,
                                          indices=self.data_slices[cid],
                                          transform=AddGaussianNoise(0., noise_level))
             self.client_dataset[cid] = curr_client_dataset
 
     def _get_dataloader(self, client_id):
         batch_size = self.args["batch_size"]
-
-        # transform_train = transforms.Compose([AddGaussianNoise(0., noise_level)])
-
-        train_loader = torch.utils.data.DataLoader(self.client_dataset[client_id], 
+        train_loader = torch.utils.data.DataLoader(self.client_dataset[client_id],
                                                    batch_size=batch_size, shuffle=True)
         return train_loader
 
@@ -194,9 +192,8 @@ if __name__ == "__main__":
 
     trainset = torchvision.datasets.FashionMNIST(root='../../../datasets/FMNIST/',
                                                  train=True,
-                                                 download=True,
+                                                 download=False,
                                                  transform=transforms.ToTensor())
-
 
     aggregator = Aggregators.fedavg_aggregate
 
@@ -207,10 +204,10 @@ if __name__ == "__main__":
 
     config['noise'] = args.noise  # add noise to configures
     trainer = FeatureSkewTrainer(model=model,
-                                  dataset=trainset,
-                                  data_slices=sub_data_indices,
-                                  aggregator=aggregator,
-                                  args=config)
+                                 dataset=trainset,
+                                 data_slices=sub_data_indices,
+                                 aggregator=aggregator,
+                                 args=config)
 
     manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
 
