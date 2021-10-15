@@ -1,7 +1,7 @@
 cifar10_config = {
     'num_clients': 100,
     'model_name': 'Cifar10Net',  # Model type
-    'com_amount': 1000,
+    'round': 10, # 1000,
     'save_period': 200,
     'weight_decay': 1e-3,
     'batch_size': 50,
@@ -12,6 +12,7 @@ cifar10_config = {
     'print_per': 1,
     'alpha_coef': 1e-2,
     'max_norm': 10,
+    'sample_ratio': 1,   
 }
 
 balance_iid_data_config = {

@@ -5,10 +5,9 @@ from pathlib import Path
 from torchvision.datasets import CIFAR10, CIFAR100
 
 import sys
-
 sys.path.append("../../../FedLab/")
 
-from fedlab.utils.dataset import CIFAR10Partitioner, CIFAR100Partitoner
+from fedlab.utils.dataset import CIFAR10Partitioner, CIFAR100Partitioner
 from fedlab.utils.functional import partition_report, save_dict, load_dict
 
 

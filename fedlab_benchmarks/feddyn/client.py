@@ -12,6 +12,7 @@ import torchvision.transforms as transforms
 torch.manual_seed(0)
 
 import sys
+sys.path.append("../../../FedLab/")
 
 from fedlab.core.client import SERIAL_TRAINER
 from fedlab.core.client.scale.trainer import SubsetSerialTrainer
@@ -112,7 +113,32 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
         #                                                                    serialized_params)
         #         self._LOGGER.info(
         #             f"Client {client_id}, Epoch {e + 1}/{epochs}, Training Loss: {epoch_loss:.4f}")
-        self._LOGGER.info(f"Client {client_id}, Global Round {self.round}")
+        
+        epochs, lr = self.args["epochs"], self.args["lr"]
+        SerializationTool.deserialize_model(self._model, model_parameters)
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(self._model.parameters(), lr=lr)
+        self._model.train()
+
+        for _ in range(epochs):
+            for data, target in train_loader:
+                if self.cuda:
+                    data = data.cuda(self.gpu)
+                    target = target.cuda(self.gpu)
+
+                output = self.model(data)
+
+                loss = criterion(output, target)
+
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+            
+        self._LOGGER.info(f"_train_alone(): Client {client_id}, Global Round {self.round} DONE")
+        
+        return self.model_parameters
+        
+        
 
     def train(self, model_parameters, id_list, aggregate=False):
         param_list = []
@@ -121,7 +147,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             "Local training with client id list: {}".format(id_list))
         for idx in id_list:
             self._LOGGER.info(
-                "Starting training procedure of client [{}]".format(idx))
+                "train(): Starting training procedure of client [{}]".format(idx))
 
             data_loader = self._get_dataloader(client_id=idx)
             alpha_coef_adpt = self.args['alpha_coef'] * self.client_weights[idx]
@@ -131,7 +157,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                               alpha_coef=alpha_coef_adpt)
             param_list.append(self.model_parameters)
 
-        self._LOGGER.info(f"Serial Trainer Global Round {self.round} done")
+        self._LOGGER.info(f"train(): Serial Trainer Global Round {self.round} done")
         self.round += 1  # trainer global round counter update
 
         if aggregate is True and self.aggregator is not None:

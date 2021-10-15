@@ -42,13 +42,13 @@ if __name__ == "__main__":
     Path(args.data_dir).mkdir(parents=True, exist_ok=True)
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
 
-    # get basic model
-    model = getattr(models, args.model_name)
-
     # get basic config
     # if args.partition == 'iid':
     alg_config = cifar10_config
     data_config = balance_iid_data_config
+
+    # get basic model
+    model = getattr(models, alg_config['model_name'])(alg_config['model_name'])
 
     os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 

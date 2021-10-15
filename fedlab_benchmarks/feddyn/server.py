@@ -27,10 +27,6 @@ from fedlab.utils.dataset import functional as dataF
 from fedlab.utils import MessageCode, SerializationTool, Aggregators
 
 
-# class FedDynServerHandler(SyncParameterServerHandler):
-#     pass
-
-
 def evaluate(model, criterion, test_loader):
     model.eval()
     gpu = next(model.parameters()).device
