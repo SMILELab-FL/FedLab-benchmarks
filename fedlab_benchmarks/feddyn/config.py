@@ -7,7 +7,7 @@ cifar10_config = {
     'batch_size': 50,
     'act_prob': 1,
     'lr_decay_per_round': 1,
-    'epoch': 5,
+    'epochs': 5,
     'lr': 0.1,
     'print_per': 5,
     'alpha_coef': 1e-2,
