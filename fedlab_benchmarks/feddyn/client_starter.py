@@ -20,6 +20,7 @@ import sys
 
 sys.path.append("../../../FedLab/")
 
+from fedlab.core.client.scale.manager import ScaleClientPassiveManager
 from fedlab.core.network import DistNetwork
 from fedlab.utils.functional import save_dict, load_dict
 
@@ -51,9 +52,9 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
     if args.partition == 'iid':
-        data_indices = load_dict("cifar10_iid.pkl")
+        data_indices = load_dict(os.path.join(args.out_dir, "cifar10_iid.pkl"))
     else:
-        data_indices = load_dict("cifar10_noniid.pkl")
+        data_indices = load_dict(os.path.join(args.out_dir, "cifar10_noniid.pkl"))
 
     # Process rank x represent client id from (x-1) * client_num_per_rank - x * client_num_per_rank
     # e.g. rank 5 <--> client 40-50
@@ -68,10 +69,24 @@ if __name__ == "__main__":
         for idx, cid in enumerate(client_id_list)
     }
 
-    trainset = torchvision.datasets.FashionMNIST(root=args.data_dir,
-                                                 train=True,
-                                                 download=False,
-                                                 transform=transforms.ToTensor())
+    transform_train = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465),
+                             (0.2023, 0.1994, 0.2010))
+    ])
+
+    trainset = torchvision.datasets.CIFAR10(root=args.data_dir,
+                                            train=True,
+                                            download=False,
+                                            transform=transform_train)
+
+    total_sample_num = len(trainset)
+    sub_client_weights = {
+        idx: len(data_indices[cid]) / total_sample_num
+        for idx, cid in enumerate(client_id_list)
+    }
 
     # aggregator = Aggregators.fedavg_aggregate
 
@@ -83,8 +98,9 @@ if __name__ == "__main__":
     trainer = FedDynSerialTrainer(model=model,
                                   dataset=trainset,
                                   data_slices=sub_data_indices,
+                                  client_weights=sub_client_weights,
                                   aggregator=None,
-                                  args=config)
+                                  args=alg_config)
 
     manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
 

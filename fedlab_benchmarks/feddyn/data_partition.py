@@ -65,7 +65,8 @@ if __name__ == "__main__":
                             unbalance_sgm=args.unbalance_sgm,
                             num_shards=args.num_shards,
                             dir_alpha=args.dir_alpha,
+                            seed=args.seed,
                             verbose=True)
-    file_name = get_exp_name(args) + ".pkl"
+    file_name = f"{args.dataset}_{args.partition}.pkl"  # get_exp_name(args) + ".pkl"
     save_dict(partition.client_dict,
               path=os.path.join(args.out_dir, file_name))

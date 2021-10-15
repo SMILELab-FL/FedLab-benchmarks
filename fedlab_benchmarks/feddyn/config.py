@@ -9,7 +9,7 @@ cifar10_config = {
     'lr_decay_per_round': 1,
     'epochs': 5,
     'lr': 0.1,
-    'print_per': 5,
+    'print_per': 1,
     'alpha_coef': 1e-2,
     'max_norm': 10,
 }
