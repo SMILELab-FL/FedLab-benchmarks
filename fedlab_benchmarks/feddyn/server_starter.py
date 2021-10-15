@@ -1,11 +1,12 @@
 import argparse
 import os
+from pathlib import Path
 
 import torch
 from torch import nn
 import torch.nn.functional as F
 import torchvision
-from torchvision import transforms
+import torchvision.transforms as transforms
 
 torch.manual_seed(0)
 
@@ -15,10 +16,11 @@ from config import cifar10_config, balance_iid_data_config
 import sys
 
 sys.path.append("../../../FedLab/")
+
 from fedlab.core.network import DistNetwork
 
-# python server.py --world_size 11
-if __name__ == "__main__":
+if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description='FL server example')
 
     parser.add_argument('--ip', type=str, default="127.0.0.1")
@@ -26,15 +28,22 @@ if __name__ == "__main__":
     parser.add_argument('--world_size', type=int)
     parser.add_argument('--ethernet', type=str, default=None)
 
-    parser.add_argument("--partition", type=str)
+    parser.add_argument("--partition", type=str, help="Choose from ['iid', 'niid']")
+    parser.add_argument("--model-name", type=str)
+    parser.add_argument("--data-dir", type=str, default='../../../datasets')
+    parser.add_argument("--out-dir", type=str, default='./Output')
     args = parser.parse_args()
 
+    Path(args.data_dir).mkdir(parents=True, exist_ok=True)
+    Path(args.out_dir).mkdir(parents=True, exist_ok=True)
+
+    # get basic model
+    model = getattr(models, args.model_name)
+
+    # get basic config
     if args.partition == 'iid':
         alg_config = cifar10_config
         data_config = balance_iid_data_config
-    else:
-        alg_config = None
-        data_config = None
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),
@@ -43,7 +52,7 @@ if __name__ == "__main__":
     ])
 
     testset = torchvision.datasets.CIFAR10(
-        root='../../../../datasets/data/cifar10/',
+        root=args.data_dir,
         train=False,
         download=True,
         transform=transform_test)
@@ -52,8 +61,6 @@ if __name__ == "__main__":
                                              batch_size=int(len(testset) / 10),
                                              drop_last=False,
                                              shuffle=False)
-
-    model = getattr(models, alg_config['model_name'])
 
     handler = RecodeHandler(model,
                             client_num_in_total=1,

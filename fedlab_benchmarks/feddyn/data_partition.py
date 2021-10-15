@@ -1,8 +1,10 @@
 import argparse
 import os
-import sys
+from pathlib import Path
 
 from torchvision.datasets import CIFAR10, CIFAR100
+
+import sys
 
 sys.path.append("../../../FedLab/")
 
@@ -30,7 +32,7 @@ def get_exp_name(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FedDyn implementation: Client scale mode")
 
-    parser.add_argument("--data-dir", type=str, default="../../../dataset/")
+    parser.add_argument("--data-dir", type=str, default="../../../datasets/")
     parser.add_argument("--out-dir", type=str, default="./Output/")
     parser.add_argument("--dataset", type=str, default="cifar10",
                         help="Currently only 'cifar10' and 'cifar100' are supported")
@@ -43,6 +45,9 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=None)
 
     args = parser.parse_args()
+
+    Path(args.data_dir).mkdir(parents=True, exist_ok=True)
+    Path(args.out_dir).mkdir(parents=True, exist_ok=True)
 
     if args.dataset == "cifar10":
         trainset = CIFAR10(root=args.data_dir, train=True, download=True)

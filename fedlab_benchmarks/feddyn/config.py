@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 9/27/21 12:49 AM
-# @Author  : Siqi Liang
-# @Contact : zszxlsq@gmail.com
-# @File    : config.py
-# @Software: PyCharm
-
 cifar10_config = {
     'num_clients': 100,
     'model_name': 'Cifar10Net',  # Model type
