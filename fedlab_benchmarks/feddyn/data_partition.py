@@ -42,7 +42,7 @@ if __name__ == "__main__":
     parser.add_argument("--unbalance-sgm", type=float, default=0)
     parser.add_argument("--dir-alpha", type=float, default=None)
     parser.add_argument("--num-shards", type=int, default=None)
-    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--seed", type=int, default=0)
 
     args = parser.parse_args()
 
@@ -52,9 +52,9 @@ if __name__ == "__main__":
     if args.dataset == "cifar10":
         trainset = CIFAR10(root=args.data_dir, train=True, download=True)
         partitioner = CIFAR10Partitioner
-    elif args.dataset == "cifar100":
-        trainset = CIFAR100(root=args.data_dir, train=True, download=True)
-        partitioner = CIFAR100Partitoner
+    # elif args.dataset == "cifar100":
+    #     trainset = CIFAR100(root=args.data_dir, train=True, download=True)
+    #     partitioner = CIFAR100Partitoner
     else:
         raise ValueError(f"{args.dataset} is not supported yet.")
 

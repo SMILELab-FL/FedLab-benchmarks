@@ -10,17 +10,18 @@ import torchvision.transforms as transforms
 
 torch.manual_seed(0)
 
-import models
-from config import cifar10_config, balance_iid_data_config
-
 import sys
 
 sys.path.append("../../../FedLab/")
 
 from fedlab.core.network import DistNetwork
+from fedlab.core.server.scale.manager import ScaleSynchronousManager
+
+import models
+from config import cifar10_config, balance_iid_data_config
+from server import RecodeHandler
 
 if __name__ == '__main__':
-
     parser = argparse.ArgumentParser(description='FL server example')
 
     parser.add_argument('--ip', type=str, default="127.0.0.1")
@@ -41,9 +42,9 @@ if __name__ == '__main__':
     model = getattr(models, args.model_name)
 
     # get basic config
-    if args.partition == 'iid':
-        alg_config = cifar10_config
-        data_config = balance_iid_data_config
+    # if args.partition == 'iid':
+    alg_config = cifar10_config
+    data_config = balance_iid_data_config
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),
@@ -63,7 +64,6 @@ if __name__ == '__main__':
                                              shuffle=False)
 
     handler = RecodeHandler(model,
-                            client_num_in_total=1,
                             global_round=alg_config["round"],
                             sample_ratio=alg_config["sample_ratio"],
                             test_loader=testloader,

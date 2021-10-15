@@ -27,46 +27,70 @@ from fedlab.utils.dataset import functional as dataF
 from fedlab.utils import MessageCode, SerializationTool, Aggregators
 
 
-# to replace "from fedlab.core.server.scale.manager import ScaleSynchronousManager"
-class ScaleSynchronousManager(ServerSynchronousManager):
-    """ServerManager used in scale scenario."""
-
-    def __init__(self, network, handler):
-        super().__init__(network, handler)
-        self.curr_round = 0
-
-    def activate_clients(self):
-        """Add client id map"""
-        clients_this_round = self._handler.sample_clients()
-        rank_dict = self.coordinator.map_id_list(clients_this_round)
-
-        self._LOGGER.info("Client Activation Procedure")
-        for rank, values in rank_dict.items():
-            self._LOGGER.info("rank {}, client ids {}".format(rank, values))
-
-            # Send parameters
-            param_pack = Package(message_code=MessageCode.ParameterUpdate,
-                                 content=[self.curr_round, self._handler.model_parameters])
-            PackageProcessor.send_package(package=param_pack, dst=rank)
-
-            # Send activate id list
-            id_list = torch.Tensor(values).int()
-            act_pack = Package(message_code=MessageCode.ParameterUpdate,
-                               content=id_list,
-                               data_type=1)
-            PackageProcessor.send_package(package=act_pack, dst=rank)
-
-    def on_receive(self, sender, message_code, payload):
-        if message_code == MessageCode.ParameterUpdate:
-            for model_parameters in payload:
-                update_flag = self._handler.add_model(sender, model_parameters)
-                # update current round after handler adds model
-                self.curr_round = self._hander.round
-                if update_flag is True:
-                    return update_flag
-        else:
-            raise Exception("Unexpected message code {}".format(message_code))
+# class FedDynServerHandler(SyncParameterServerHandler):
+#     pass
 
 
-class FedDynServerHandler(SyncParameterServerHandler):
-    pass
+def evaluate(model, criterion, test_loader):
+    model.eval()
+    gpu = next(model.parameters()).device
+
+    loss_ = AverageMeter()
+    acc_ = AverageMeter()
+
+    with torch.no_grad():
+        for inputs, labels in test_loader:
+            inputs = inputs.to(gpu)
+            labels = labels.to(gpu)
+
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+
+            _, predicted = torch.max(outputs, 1)
+            loss_.update(loss.item())
+            acc_.update(torch.sum(predicted.eq(labels)).item(), len(labels))
+
+    return loss_.sum, acc_.avg
+
+
+def write_file(acces, losses, config):
+    record = open(
+        "{}_{}_{}_{}.txt".format(config['partition'], config['network'],
+                                 config['dataset'], config['run']), "w")
+
+    record.write(str(config) + "\n")
+    record.write(str(losses) + "\n")
+    record.write(str(acces) + "\n")
+    record.close()
+
+
+class RecodeHandler(SyncParameterServerHandler):
+    def __init__(self,
+                 model,
+                 test_loader,
+                 global_round=5,
+                 cuda=False,
+                 sample_ratio=1.0,
+                 logger=None,
+                 config=None):
+        super().__init__(model,
+                         global_round=global_round,
+                         cuda=cuda,
+                         sample_ratio=sample_ratio,
+                         logger=logger)
+
+        self.test_loader = test_loader
+        self.loss_ = []
+        self.acc_ = []
+        self.config = config
+
+    def _update_model(self, model_parameters_list):
+        super()._update_model(model_parameters_list)
+
+        loss, acc = evaluate(self._model, torch.nn.CrossEntropyLoss(),
+                             self.test_loader)
+
+        self.loss_.append(loss)
+        self.acc_.append(acc)
+
+        write_file(self.acc_, self.loss_, self.config)

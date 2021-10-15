@@ -22,6 +22,7 @@ sys.path.append("../../../FedLab/")
 
 from fedlab.core.client.scale.manager import ScaleClientPassiveManager
 from fedlab.core.network import DistNetwork
+from fedlab.utils.logger import Logger
 from fedlab.utils.functional import save_dict, load_dict
 
 if __name__ == "__main__":
@@ -45,9 +46,9 @@ if __name__ == "__main__":
     model = getattr(models, args.model_name)
 
     # get basic config
-    if args.partition == 'iid':
-        alg_config = cifar10_config
-        data_config = balance_iid_data_config
+    # if args.partition == 'iid':
+    alg_config = cifar10_config
+    data_config = balance_iid_data_config
 
     os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
@@ -95,11 +96,14 @@ if __name__ == "__main__":
                           rank=args.rank,
                           ethernet=args.ethernet)
 
+    trainer_logger = Logger(f"ClientSerialTrainer-Rank-{args.rank:2d}",
+                            os.path.join(args.out_dir, f"ClientSerialTrainer_rank_{args.rank:2d}"))
     trainer = FedDynSerialTrainer(model=model,
                                   dataset=trainset,
                                   data_slices=sub_data_indices,
                                   client_weights=sub_client_weights,
                                   aggregator=None,
+                                  logger=trainer_logger,
                                   args=alg_config)
 
     manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
