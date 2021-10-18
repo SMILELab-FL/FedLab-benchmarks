@@ -156,7 +156,6 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
 
             data_loader = self._get_dataloader(client_id=idx)
             alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[idx]
-            #
             self._train_alone(cld_model_params=model_parameters,
                               train_loader=data_loader,
                               client_id=idx,

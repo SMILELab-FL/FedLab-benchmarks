@@ -112,16 +112,6 @@ if __name__ == "__main__":
                                   aggregator=None,
                                   logger=trainer_logger,
                                   args=alg_config)
-    # trainer = SubsetSerialTrainer(model=model,
-    #                               dataset=trainset,
-    #                               data_slices=sub_data_indices,
-    #                               aggregator=aggregator,
-    #                               logger=trainer_logger,
-    #                               args={
-    #                               "batch_size": 100,
-    #                               "lr": 0.02,
-    #                               "epochs": 5
-    #                           })
 
     manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
     manager_.run()

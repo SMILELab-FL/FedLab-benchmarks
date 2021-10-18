@@ -17,10 +17,12 @@ sys.path.append("../../../FedLab/")
 from fedlab.core.network import DistNetwork
 from fedlab.core.server.scale.manager import ScaleSynchronousManager
 from fedlab.core.server.handler import SyncParameterServerHandler
+from fedlab.utils.functional import save_dict, load_dict
+from fedlab.utils.logger import Logger
 
 import models
 from config import cifar10_config, balance_iid_data_config, debug_config
-from server import RecodeHandler
+from server import RecodeHandler, FedDynServerHandler
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='FL server example')
@@ -64,16 +66,15 @@ if __name__ == '__main__':
                                              drop_last=False,
                                              shuffle=False)
 
-    # handler = RecodeHandler(model,
-    #                         global_round=alg_config["round"],
-    #                         sample_ratio=alg_config["sample_ratio"],
-    #                         test_loader=testloader,
-    #                         cuda=True,
-    #                         config=alg_config)
-    handler = SyncParameterServerHandler(model,
-                                     global_round=alg_config["round"],
-                                     sample_ratio=alg_config["sample_ratio"],
-                                     cuda=True)
+    server_logger = Logger(f"ServerHandler",
+                           os.path.join(args.out_dir, f"server_handler.txt"))
+    handler = FedDynServerHandler(model,
+                                  global_round=alg_config["round"],
+                                  sample_ratio=alg_config["sample_ratio"],
+                                  test_loader=testloader,
+                                  cuda=True,
+                                  logger=server_logger,
+                                  args=alg_config)
 
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,

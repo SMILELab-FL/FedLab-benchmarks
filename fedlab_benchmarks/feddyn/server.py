@@ -90,3 +90,38 @@ class RecodeHandler(SyncParameterServerHandler):
         self.acc_.append(acc)
 
         write_file(self.acc_, self.loss_, self.config)
+
+
+class FedDynServerHandler(SyncParameterServerHandler):
+    def __init__(self,
+                 model,
+                 test_loader,
+                 global_round=5,
+                 cuda=False,
+                 sample_ratio=1.0,
+                 logger=None,
+                 args=None):
+        super().__init__(model,
+                         global_round=global_round,
+                         cuda=cuda,
+                         sample_ratio=sample_ratio,
+                         logger=logger)
+
+        self.test_loader = test_loader
+        self.loss_ = []
+        self.acc_ = []
+        self.args = args
+
+    def _update_model(self, model_parameters_list):
+        self._LOGGER.info(
+            "Model parameters aggregation, number of aggregation elements {}".format(
+                len(model_parameters_list)))
+        # use aggregator
+        serialized_parameters = Aggregators.fedavg_aggregate(
+            model_parameters_list)
+        SerializationTool.deserialize_model(self._model, serialized_parameters)
+
+        # reset cache cnt
+        self.cache_cnt = 0
+        self.client_buffer_cache = []
+        self.train_flag = False
