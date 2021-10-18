@@ -116,12 +116,15 @@ class FedDynServerHandler(SyncParameterServerHandler):
         self._LOGGER.info(
             "Model parameters aggregation, number of aggregation elements {}".format(
                 len(model_parameters_list)))
-        # use aggregator
-        serialized_parameters = Aggregators.fedavg_aggregate(
-            model_parameters_list)
-        SerializationTool.deserialize_model(self._model, serialized_parameters)
+        # =========== update server model
+        # serialized_parameters = Aggregators.fedavg_aggregate(
+        #     model_parameters_list)
+        # SerializationTool.deserialize_model(self._model, serialized_parameters)
+        avg_mdl_param = Aggregators.fedavg_aggregate(model_parameters_list)
+        # TODO: avg_local_param is avg of all local params (including selected and unselected)
+        cld_mdl_param = avg_mdl_param + avg_local_param
 
-        # reset cache cnt
+        # =========== reset cache cnt
         self.cache_cnt = 0
         self.client_buffer_cache = []
         self.train_flag = False
