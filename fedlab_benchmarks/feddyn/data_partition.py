@@ -49,10 +49,10 @@ if __name__ == "__main__":
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
 
     if args.dataset == "cifar10":
-        trainset = CIFAR10(root=args.data_dir, train=True, download=True)
+        trainset = CIFAR10(root=os.path.join(args.data_dir, 'CIFAR10'), train=True, download=True)
         partitioner = CIFAR10Partitioner
     # elif args.dataset == "cifar100":
-    #     trainset = CIFAR100(root=args.data_dir, train=True, download=True)
+    #     trainset = CIFAR100(root=os.path.join(args.data_dir, 'CIFAR100'), train=True, download=True)
     #     partitioner = CIFAR100Partitoner
     else:
         raise ValueError(f"{args.dataset} is not supported yet.")

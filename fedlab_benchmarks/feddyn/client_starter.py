@@ -13,7 +13,7 @@ import torchvision.transforms as transforms
 torch.manual_seed(0)
 
 import models
-from config import cifar10_config, balance_iid_data_config
+from config import cifar10_config, balance_iid_data_config, debug_config
 from client import FedDynSerialTrainer
 
 import sys
@@ -21,6 +21,8 @@ import sys
 sys.path.append("../../../FedLab/")
 
 from fedlab.core.client.scale.manager import ScaleClientPassiveManager
+from fedlab.core.client.scale.trainer import SubsetSerialTrainer
+from fedlab.utils.aggregator import Aggregators
 from fedlab.core.network import DistNetwork
 from fedlab.utils.logger import Logger
 from fedlab.utils.functional import save_dict, load_dict
@@ -28,7 +30,7 @@ from fedlab.utils.functional import save_dict, load_dict
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FedDyn client demo in FedLab")
     parser.add_argument("--ip", type=str, default="127.0.0.1")
-    parser.add_argument("--port", type=str, default="3003")
+    parser.add_argument("--port", type=str, default="3002")
     parser.add_argument("--world_size", type=int)
     parser.add_argument("--rank", type=int)
     parser.add_argument("--client-num-per-rank", type=int, default=10)
@@ -44,8 +46,9 @@ if __name__ == "__main__":
 
     # get basic config
     # if args.partition == 'iid':
-    alg_config = cifar10_config
-    data_config = balance_iid_data_config
+    # alg_config = cifar10_config
+    # data_config = balance_iid_data_config
+    alg_config = debug_config
 
     # get basic model
     model = getattr(models, alg_config['model_name'])(alg_config['model_name'])
@@ -54,8 +57,11 @@ if __name__ == "__main__":
 
     if args.partition == 'iid':
         data_indices = load_dict(os.path.join(args.out_dir, "cifar10_iid.pkl"))
-    else:
+    elif args.partition == 'noniid':
         data_indices = load_dict(os.path.join(args.out_dir, "cifar10_noniid.pkl"))
+    else:
+        raise ValueError(f"args.partition '{args.partition}' is not supported yet")
+    
 
     # Process rank x represent client id from (x-1) * client_num_per_rank - x * client_num_per_rank
     # e.g. rank 5 <--> client 40-50
@@ -78,7 +84,7 @@ if __name__ == "__main__":
                              (0.2023, 0.1994, 0.2010))
     ])
 
-    trainset = torchvision.datasets.CIFAR10(root=args.data_dir,
+    trainset = torchvision.datasets.CIFAR10(root=os.path.join(args.data_dir, 'CIFAR10'),
                                             train=True,
                                             download=False,
                                             transform=transform_train)
@@ -89,15 +95,16 @@ if __name__ == "__main__":
         for idx, cid in enumerate(client_id_list)
     }
 
-    # aggregator = Aggregators.fedavg_aggregate
+    aggregator = Aggregators.fedavg_aggregate
 
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,
                           rank=args.rank,
                           ethernet=args.ethernet)
 
-    trainer_logger = Logger(f"ClientSerialTrainer-Rank-{args.rank:2d}",
-                            os.path.join(args.out_dir, f"ClientSerialTrainer_rank_{args.rank:2d}"))
+    # trainer_logger = Logger(f"ClientSerialTrainer-Rank-{args.rank:2d}")
+    trainer_logger = Logger(f"ClientTrainer-Rank-{args.rank:2d}",
+                            os.path.join(args.out_dir, f"ClientTrainer_rank_{args.rank:2d}.txt"))
     trainer = FedDynSerialTrainer(model=model,
                                   dataset=trainset,
                                   data_slices=sub_data_indices,
@@ -105,7 +112,16 @@ if __name__ == "__main__":
                                   aggregator=None,
                                   logger=trainer_logger,
                                   args=alg_config)
+    # trainer = SubsetSerialTrainer(model=model,
+    #                               dataset=trainset,
+    #                               data_slices=sub_data_indices,
+    #                               aggregator=aggregator,
+    #                               logger=trainer_logger,
+    #                               args={
+    #                               "batch_size": 100,
+    #                               "lr": 0.02,
+    #                               "epochs": 5
+    #                           })
 
     manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
-
     manager_.run()

@@ -16,16 +16,17 @@ sys.path.append("../../../FedLab/")
 
 from fedlab.core.network import DistNetwork
 from fedlab.core.server.scale.manager import ScaleSynchronousManager
+from fedlab.core.server.handler import SyncParameterServerHandler
 
 import models
-from config import cifar10_config, balance_iid_data_config
+from config import cifar10_config, balance_iid_data_config, debug_config
 from server import RecodeHandler
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='FL server example')
 
     parser.add_argument('--ip', type=str, default="127.0.0.1")
-    parser.add_argument('--port', type=str, default="3003")
+    parser.add_argument('--port', type=str, default="3002")
     parser.add_argument('--world_size', type=int)
     parser.add_argument('--ethernet', type=str, default=None)
 
@@ -40,8 +41,9 @@ if __name__ == '__main__':
 
     # get basic config
     # if args.partition == 'iid':
-    alg_config = cifar10_config
-    data_config = balance_iid_data_config
+    # alg_config = cifar10_config
+    # data_config = balance_iid_data_config
+    alg_config = debug_config
 
     # get basic model
     model = getattr(models, alg_config['model_name'])(alg_config['model_name'])
@@ -52,23 +54,26 @@ if __name__ == '__main__':
                              (0.2023, 0.1994, 0.2010))
     ])
 
-    testset = torchvision.datasets.CIFAR10(
-        root=args.data_dir,
-        train=False,
-        download=True,
-        transform=transform_test)
+    testset = torchvision.datasets.CIFAR10(root=os.path.join(args.data_dir, 'CIFAR10'),
+                                           train=False,
+                                           download=True,
+                                           transform=transform_test)
 
     testloader = torch.utils.data.DataLoader(testset,
                                              batch_size=int(len(testset) / 10),
                                              drop_last=False,
                                              shuffle=False)
 
-    handler = RecodeHandler(model,
-                            global_round=alg_config["round"],
-                            sample_ratio=alg_config["sample_ratio"],
-                            test_loader=testloader,
-                            cuda=True,
-                            config=alg_config)
+    # handler = RecodeHandler(model,
+    #                         global_round=alg_config["round"],
+    #                         sample_ratio=alg_config["sample_ratio"],
+    #                         test_loader=testloader,
+    #                         cuda=True,
+    #                         config=alg_config)
+    handler = SyncParameterServerHandler(model,
+                                     global_round=alg_config["round"],
+                                     sample_ratio=alg_config["sample_ratio"],
+                                     cuda=True)
 
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,
