@@ -31,6 +31,22 @@ from fedlab.utils.functional import AverageMeter
 from fedlab.utils.message_code import MessageCode
 
 
+def save_model_params(model, file, logger=None):
+    """
+
+    Args:
+        model (nn.Module): model to serialize and save.
+        file (str): full path file name, ``*.pt`` is preferred.
+        logger (Logger): logger for information print.
+
+    Returns:
+
+    """
+    serialized_params = SerializationTool.serialize_model(model)
+    torch.save(serialized_params, file)
+    logger.info(f"{file} saved.")
+
+
 class FedDynSerialTrainer(SubsetSerialTrainer):
     def __init__(self, model,
                  dataset,
@@ -125,28 +141,6 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                 self._LOGGER.info(
                     f"Client {client_id}, Epoch {e + 1}/{epochs}, Training Loss: {epoch_loss:.4f}")
 
-        # ============================== Simple prototype start ==============================
-        # epochs, lr = self.args["epochs"], self.args["lr"]
-        # SerializationTool.deserialize_model(self._model, model_parameters)
-        # criterion = torch.nn.CrossEntropyLoss()
-        # optimizer = torch.optim.SGD(self._model.parameters(), lr=lr)
-        # self._model.train()
-        #
-        # for _ in range(epochs):
-        #     for data, target in train_loader:
-        #         if self.cuda:
-        #             data = data.cuda(self.gpu)
-        #             target = target.cuda(self.gpu)
-        #
-        #         output = self.model(data)
-        #
-        #         loss = criterion(output, target)
-        #
-        #         optimizer.zero_grad()
-        #         loss.backward()
-        #         optimizer.step()
-        # ============================== Simple prototype done ==============================
-
         self._LOGGER.info(f"_train_alone(): Client {client_id}, Global Round {self.round} DONE")
 
         return self.model_parameters
@@ -162,10 +156,13 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
 
             data_loader = self._get_dataloader(client_id=idx)
             alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[idx]
+            #
             self._train_alone(cld_model_params=model_parameters,
                               train_loader=data_loader,
                               client_id=idx,
-                              alpha_coef=alpha_coef_adpt)
+                              alpha_coef=alpha_coef_adpt,
+                              avg_mdl_param=avg_mdl_param,
+                              local_grad_vector=local_grad_vector)
             param_list.append(self.model_parameters)
 
         self._LOGGER.info(f"train(): Serial Trainer Global Round {self.round} done")
