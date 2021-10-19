@@ -26,6 +26,7 @@ from fedlab.utils.functional import load_dict
 from fedlab.utils.dataset import functional as dataF
 from fedlab.utils import MessageCode, SerializationTool, Aggregators
 
+from config import local_params_file_pattern, clnt_params_file_pattern
 
 def evaluate(model, criterion, test_loader):
     model.eval()
@@ -111,18 +112,25 @@ class FedDynServerHandler(SyncParameterServerHandler):
         self.loss_ = []
         self.acc_ = []
         self.args = args
+        self.local_param_list = []
+        num_clients = args['num_clients']
+        serialized_params = SerializationTool.serialize_model(model)
+        for cid in range(num_clients):
+            pass
 
     def _update_model(self, model_parameters_list):
         self._LOGGER.info(
             "Model parameters aggregation, number of aggregation elements {}".format(
                 len(model_parameters_list)))
         # =========== update server model
-        # serialized_parameters = Aggregators.fedavg_aggregate(
-        #     model_parameters_list)
-        # SerializationTool.deserialize_model(self._model, serialized_parameters)
         avg_mdl_param = Aggregators.fedavg_aggregate(model_parameters_list)
         # TODO: avg_local_param is avg of all local params (including selected and unselected)
+        # read serialized params of all clients from local files and average them
+        local_params_list = []
+        avg_local_param = Aggregators.fedavg_aggregate(local_params_list)
         cld_mdl_param = avg_mdl_param + avg_local_param
+        # load latest cloud model into server model
+        SerializationTool.deserialize_model(self._model, cld_mdl_param)
 
         # =========== reset cache cnt
         self.cache_cnt = 0

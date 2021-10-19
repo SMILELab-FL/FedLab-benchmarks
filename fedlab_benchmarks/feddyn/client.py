@@ -30,21 +30,23 @@ from fedlab.core.coordinator import Coordinator
 from fedlab.utils.functional import AverageMeter
 from fedlab.utils.message_code import MessageCode
 
+from config import local_params_file_pattern, clnt_params_file_pattern
 
-def save_model_params(model, file, logger=None):
-    """
 
-    Args:
-        model (nn.Module): model to serialize and save.
-        file (str): full path file name, ``*.pt`` is preferred.
-        logger (Logger): logger for information print.
-
-    Returns:
-
-    """
-    serialized_params = SerializationTool.serialize_model(model)
-    torch.save(serialized_params, file)
-    logger.info(f"{file} saved.")
+# def save_model_params(model, file, logger=None):
+#     """
+#
+#     Args:
+#         model (nn.Module): model to serialize and save.
+#         file (str): full path file name, ``*.pt`` is preferred.
+#         logger (Logger): logger for information print.
+#
+#     Returns:
+#
+#     """
+#     serialized_params = SerializationTool.serialize_model(model)
+#     torch.save(serialized_params, file)
+#     logger.info(f"{file} saved.")
 
 
 class FedDynSerialTrainer(SubsetSerialTrainer):
@@ -53,6 +55,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                  data_slices,
                  client_weights=None,
                  aggregator=None,
+                 rank=None,
                  logger=Logger(),
                  cuda=True,
                  args=None):
@@ -64,6 +67,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                          cuda=cuda,
                          args=args)
         self.client_weights = client_weights
+        self.rank = rank
         self.round = 0  # global round, try not to use package to inform global round
 
     def _train_alone(self, cld_model_params,
@@ -143,26 +147,30 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
 
         self._LOGGER.info(f"_train_alone(): Client {client_id}, Global Round {self.round} DONE")
 
-        return self.model_parameters
-
     def train(self, model_parameters, id_list, aggregate=False):
         param_list = []
 
         self._LOGGER.info(
             "Local training with client id list: {}".format(id_list))
-        for idx in id_list:
+        for cid in id_list:
             self._LOGGER.info(
-                "train(): Starting training procedure of client [{}]".format(idx))
+                "train(): Starting training procedure of client [{}]".format(cid))
 
-            data_loader = self._get_dataloader(client_id=idx)
-            alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[idx]
+            data_loader = self._get_dataloader(client_id=cid)
+            alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[cid]
             self._train_alone(cld_model_params=model_parameters,
                               train_loader=data_loader,
-                              client_id=idx,
+                              client_id=cid,
                               alpha_coef=alpha_coef_adpt,
                               avg_mdl_param=avg_mdl_param,
                               local_grad_vector=local_grad_vector)
             param_list.append(self.model_parameters)
+            global_cid = self._local_to_global_map(cid)
+            # save serialized params of current client into file
+            clnt_params_file = os.path.join("./Output/",
+                                            clnt_params_file_pattern.format(cid=global_cid))
+            torch.save(self.model_parameters, clnt_params_file)
+            self._LOGGER.info(f"client {cid} serialized params save to {clnt_params_file}")
 
         self._LOGGER.info(f"train(): Serial Trainer Global Round {self.round} done")
         self.round += 1  # trainer global round counter update
@@ -173,3 +181,18 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             return aggregated_parameters
         else:
             return param_list
+
+    def _local_to_global_map(self, local_client_id, client_num_per_rank=10):
+        """
+        NOTE: this function can only be used for simulations where each trainer has same number of
+        clients!!!
+
+        Args:
+            local_client_id: local client id on current client process
+            client_num_per_rank: number of clients on each client process
+
+        Returns:
+
+        """
+        global_client_id = (self.rank - 1) * client_num_per_rank + local_client_id
+        return global_client_id

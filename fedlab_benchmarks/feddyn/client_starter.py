@@ -110,6 +110,7 @@ if __name__ == "__main__":
                                   data_slices=sub_data_indices,
                                   client_weights=sub_client_weights,
                                   aggregator=None,
+                                  rank=args.rank,
                                   logger=trainer_logger,
                                   args=alg_config)
 

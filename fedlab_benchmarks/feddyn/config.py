@@ -38,3 +38,8 @@ debug_config = {
     'max_norm': 10,
     'sample_ratio': 1,   
 }
+
+
+# usage: local_params_file_pattern.format(cid=cid)
+local_params_file_pattern = "client_{cid:03d}_local_params.pt"  # accumulated model param change for client cid
+clnt_params_file_pattern = "client_{cid:03d}_clnt_params.pt"  # latest model param for client cid
