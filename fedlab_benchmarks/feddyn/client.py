@@ -30,23 +30,7 @@ from fedlab.core.coordinator import Coordinator
 from fedlab.utils.functional import AverageMeter
 from fedlab.utils.message_code import MessageCode
 
-from config import local_params_file_pattern, clnt_params_file_pattern
-
-
-# def save_model_params(model, file, logger=None):
-#     """
-#
-#     Args:
-#         model (nn.Module): model to serialize and save.
-#         file (str): full path file name, ``*.pt`` is preferred.
-#         logger (Logger): logger for information print.
-#
-#     Returns:
-#
-#     """
-#     serialized_params = SerializationTool.serialize_model(model)
-#     torch.save(serialized_params, file)
-#     logger.info(f"{file} saved.")
+from config import local_grad_vector_file_pattern, clnt_params_file_pattern
 
 
 class FedDynSerialTrainer(SubsetSerialTrainer):
@@ -73,22 +57,22 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
     def _train_alone(self, cld_model_params,
                      train_loader,
                      client_id,
+                     lr,
                      alpha_coef,
+                     epochs,
                      avg_mdl_param,
                      local_grad_vector):
         """
         cld_model_params: serialized model params from cloud model (server model)
         train_loader:
         client_id:
+        lr:
         alpha_coef:
+        epochs:
         avg_mdl_param:  model avg of selected clients from last round
         local_grad_vector:
         """
-        orig_lr = self.args['lr']
-        lr_decay_per_round = self.args['lr_decay_per_round']
-        lr = orig_lr * (lr_decay_per_round ** self.round)  # using learning rate decay
         weight_decay = self.args['weight_decay']
-        epochs = self.args['epochs']
         max_norm = self.args['max_norm']
         print_freq = self.args['print_freq']
 
@@ -149,6 +133,10 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
 
     def train(self, model_parameters, id_list, aggregate=False):
         param_list = []
+        orig_lr = self.args['lr']
+        lr_decay_per_round = self.args['lr_decay_per_round']
+        lr = orig_lr * (lr_decay_per_round ** self.round)  # using learning rate decay
+        epochs = self.args['epochs']
 
         self._LOGGER.info(
             "Local training with client id list: {}".format(id_list))
@@ -157,20 +145,31 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                 "train(): Starting training procedure of client [{}]".format(cid))
 
             data_loader = self._get_dataloader(client_id=cid)
+            # read local grad vector from files
+            global_cid = self._local_to_global_map(cid)
+            local_grad_vector_file = local_grad_vector_file_pattern.format(cid=global_cid)
+            local_grad_vector = torch.load(local_grad_vector_file,
+                                           map_location=self.gpu)  # TODO: need check here
             alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[cid]
+
             self._train_alone(cld_model_params=model_parameters,
                               train_loader=data_loader,
                               client_id=cid,
                               alpha_coef=alpha_coef_adpt,
-                              avg_mdl_param=avg_mdl_param,
-                              local_grad_vector=local_grad_vector)
+                              lr=lr,
+                              epochs=epochs,
+                              avg_mdl_param=model_parameters.data,  # can only be *.data !!
+                              local_grad_vector=local_grad_vector.data)
             param_list.append(self.model_parameters)
-            global_cid = self._local_to_global_map(cid)
             # save serialized params of current client into file
-            clnt_params_file = os.path.join("./Output/",
-                                            clnt_params_file_pattern.format(cid=global_cid))
+            clnt_params_file = clnt_params_file_pattern.format(cid=global_cid)
             torch.save(self.model_parameters, clnt_params_file)
             self._LOGGER.info(f"client {cid} serialized params save to {clnt_params_file}")
+
+            # update local gradient vector of current client, and save to file
+            local_grad_vector += self.model_parameters - model_parameters
+            torch.save(local_grad_vector, local_grad_vector_file)
+            self._LOGGER.info(f"client {cid} serialized gradients save to {local_grad_vector_file}")
 
         self._LOGGER.info(f"train(): Serial Trainer Global Round {self.round} done")
         self.round += 1  # trainer global round counter update

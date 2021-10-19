@@ -12,7 +12,7 @@ cifar10_config = {
     'print_per': 1,
     'alpha_coef': 1e-2,
     'max_norm': 10,
-    'sample_ratio': 1,   
+    'sample_ratio': 1,
 }
 
 balance_iid_data_config = {
@@ -25,7 +25,7 @@ balance_iid_data_config = {
 debug_config = {
     'num_clients': 30,
     'model_name': 'Cifar10Net',  # Model type
-    'round': 3, 
+    'round': 3,
     'save_period': 2,
     'weight_decay': 1e-3,
     'batch_size': 256,
@@ -36,10 +36,9 @@ debug_config = {
     'print_per': 1,
     'alpha_coef': 1e-2,
     'max_norm': 10,
-    'sample_ratio': 1,   
+    'sample_ratio': 1,
 }
 
-
 # usage: local_params_file_pattern.format(cid=cid)
-local_params_file_pattern = "client_{cid:03d}_local_params.pt"  # accumulated model param change for client cid
-clnt_params_file_pattern = "client_{cid:03d}_clnt_params.pt"  # latest model param for client cid
+local_grad_vector_file_pattern = "./Output/client_{cid:03d}_local_grad_vector.pt"  # accumulated model gradient
+clnt_params_file_pattern = "./Output/client_{cid:03d}_clnt_params.pt"  # latest model param

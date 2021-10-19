@@ -26,7 +26,8 @@ from fedlab.utils.functional import load_dict
 from fedlab.utils.dataset import functional as dataF
 from fedlab.utils import MessageCode, SerializationTool, Aggregators
 
-from config import local_params_file_pattern, clnt_params_file_pattern
+from config import local_grad_vector_file_pattern, clnt_params_file_pattern
+
 
 def evaluate(model, criterion, test_loader):
     model.eval()
@@ -115,8 +116,12 @@ class FedDynServerHandler(SyncParameterServerHandler):
         self.local_param_list = []
         num_clients = args['num_clients']
         serialized_params = SerializationTool.serialize_model(model)
+        zeros_params = torch.zeros(serialized_params.shape[0])
         for cid in range(num_clients):
-            pass
+            local_grad_vector_file = local_grad_vector_file_pattern.format(cid=cid)
+            clnt_params_file = clnt_params_file_pattern.format(cid=cid)
+            torch.save(zeros_params, local_grad_vector_file)
+            torch.save(serialized_params, clnt_params_file)
 
     def _update_model(self, model_parameters_list):
         self._LOGGER.info(
@@ -124,12 +129,16 @@ class FedDynServerHandler(SyncParameterServerHandler):
                 len(model_parameters_list)))
         # =========== update server model
         avg_mdl_param = Aggregators.fedavg_aggregate(model_parameters_list)
-        # TODO: avg_local_param is avg of all local params (including selected and unselected)
+        # avg_local_grad is avg of local gradients from all clients
         # read serialized params of all clients from local files and average them
-        local_params_list = []
-        avg_local_param = Aggregators.fedavg_aggregate(local_params_list)
-        cld_mdl_param = avg_mdl_param + avg_local_param
-        # load latest cloud model into server model
+        local_grad_vector_list = []
+        for cid in range(self.client_num_in_total):
+            local_grad_vector_file = local_grad_vector_file_pattern.format(cid=cid)
+            curr_local_grad_vector = torch.load(local_grad_vector_file)
+            local_grad_vector_list.append(curr_local_grad_vector)
+        avg_local_grad = Aggregators.fedavg_aggregate(local_grad_vector_list)
+        cld_mdl_param = avg_mdl_param + avg_local_grad
+        # load latest cloud model params into server model
         SerializationTool.deserialize_model(self._model, cld_mdl_param)
 
         # =========== reset cache cnt
