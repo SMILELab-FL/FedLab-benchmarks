@@ -1,28 +1,21 @@
-import argparse
-import os
-from pathlib import Path
-
 import torch
-from torch import nn
-import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 
 torch.manual_seed(0)
 
+import argparse
+import os
+from pathlib import Path
 import sys
-
 sys.path.append("../../../FedLab/")
 
 from fedlab.core.network import DistNetwork
 from fedlab.core.server.scale.manager import ScaleSynchronousManager
-from fedlab.core.server.handler import SyncParameterServerHandler
-from fedlab.utils.functional import save_dict, load_dict
 from fedlab.utils.logger import Logger
 
-import models
 from config import cifar10_config, balance_iid_data_config, debug_config
-from server import RecodeHandler, FedDynServerHandler
+from server import FedDynServerHandler
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='FL server example')
@@ -46,9 +39,6 @@ if __name__ == '__main__':
     # alg_config = cifar10_config
     # data_config = balance_iid_data_config
     alg_config = debug_config
-
-    # # get basic model
-    # model = getattr(models, alg_config['model_name'])(alg_config['model_name'])
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),

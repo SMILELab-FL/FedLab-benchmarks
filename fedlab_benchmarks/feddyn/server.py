@@ -1,31 +1,17 @@
-import argparse
-import os
-
 import torch
-from torch import nn
-import torch.nn.functional as F
-import torchvision
-import torchvision.transforms as transforms
-
-torch.manual_seed(0)
-
-import models
-from config import cifar10_config, balance_iid_data_config
 
 import sys
-
 sys.path.append("../../../FedLab/")
+
 from fedlab.core.network import DistNetwork
 from fedlab.core.server.manager import ServerSynchronousManager
 from fedlab.core.server.handler import SyncParameterServerHandler
 from fedlab.core.network import DistNetwork
-
-from fedlab.utils.functional import AverageMeter
-from fedlab.utils.functional import load_dict
-from fedlab.utils.dataset import functional as dataF
+from fedlab.utils.functional import AverageMeter, load_dict
 from fedlab.utils import SerializationTool, Aggregators
 
 from config import local_grad_vector_file_pattern, clnt_params_file_pattern
+import models
 
 
 def evaluate(model, criterion, test_loader):
@@ -61,8 +47,8 @@ def write_file(acces, losses, config):
 
     record.write(str(config) + "\n")
     for key in key_name:
-        record.write(f"{key}_loss:" + str(losses[key]) + "\n")
         record.write(f"{key}_acc:" + str(acces[key]) + "\n")
+        record.write(f"{key}_loss:" + str(losses[key]) + "\n")
     record.close()
 
 

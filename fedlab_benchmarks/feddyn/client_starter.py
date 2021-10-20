@@ -1,31 +1,24 @@
-import argparse
-import os
-from pathlib import Path
-import logging
-from math import sqrt
-
 import torch
-from torch import nn
-import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 
 torch.manual_seed(0)
 
-import models
-from config import cifar10_config, balance_iid_data_config, debug_config
-from client import FedDynSerialTrainer
-
+import argparse
+import os
+from pathlib import Path
 import sys
 
 sys.path.append("../../../FedLab/")
 
 from fedlab.core.client.scale.manager import ScaleClientPassiveManager
-from fedlab.core.client.scale.trainer import SubsetSerialTrainer
-from fedlab.utils.aggregator import Aggregators
 from fedlab.core.network import DistNetwork
 from fedlab.utils.logger import Logger
 from fedlab.utils.functional import save_dict, load_dict
+
+import models
+from config import cifar10_config, balance_iid_data_config, debug_config
+from client import FedDynSerialTrainer
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FedDyn client demo in FedLab")
@@ -61,7 +54,6 @@ if __name__ == "__main__":
         data_indices = load_dict(os.path.join(args.out_dir, "cifar10_noniid.pkl"))
     else:
         raise ValueError(f"args.partition '{args.partition}' is not supported yet")
-    
 
     # Process rank x represent client id from (x-1) * client_num_per_rank - x * client_num_per_rank
     # e.g. rank 5 <--> client 40-50
@@ -95,8 +87,6 @@ if __name__ == "__main__":
         for idx, cid in enumerate(client_id_list)
     }
 
-    aggregator = Aggregators.fedavg_aggregate
-
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,
                           rank=args.rank,
@@ -109,7 +99,6 @@ if __name__ == "__main__":
                                   dataset=trainset,
                                   data_slices=sub_data_indices,
                                   client_weights=sub_client_weights,
-                                  aggregator=None,
                                   rank=args.rank,
                                   logger=trainer_logger,
                                   args=alg_config)
