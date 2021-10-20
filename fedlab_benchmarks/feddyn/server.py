@@ -52,8 +52,8 @@ def evaluate(model, criterion, test_loader):
 
 def write_file(acces, losses, config):
     record = open(
-        "{}_{}_{}_{}.txt".format(config['partition'], config['network'],
-                                 config['dataset'], config['run']), "w")
+        "./Output/{}_{}_{}_{}.txt".format(config['partition'], config['network'],
+                                          config['dataset'], config['run']), "w")
 
     key_name = ['avg_mdl_train', 'avg_mdl_test',
                 'all_mdl_train', 'all_mdl_test',
