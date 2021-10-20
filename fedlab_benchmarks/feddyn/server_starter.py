@@ -47,8 +47,8 @@ if __name__ == '__main__':
     # data_config = balance_iid_data_config
     alg_config = debug_config
 
-    # get basic model
-    model = getattr(models, alg_config['model_name'])(alg_config['model_name'])
+    # # get basic model
+    # model = getattr(models, alg_config['model_name'])(alg_config['model_name'])
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),
@@ -56,22 +56,32 @@ if __name__ == '__main__':
                              (0.2023, 0.1994, 0.2010))
     ])
 
+    trainset = torchvision.datasets.CIFAR10(root=os.path.join(args.data_dir, 'CIFAR10'),
+                                            train=True,
+                                            download=False,
+                                            transform=transform_test)
+
     testset = torchvision.datasets.CIFAR10(root=os.path.join(args.data_dir, 'CIFAR10'),
                                            train=False,
-                                           download=True,
+                                           download=False,
                                            transform=transform_test)
 
+    trainloader = torch.utils.data.DataLoader(trainset,
+                                              batch_size=alg_config['test_batch_size'],
+                                              drop_last=False,
+                                              shuffle=False)
+
     testloader = torch.utils.data.DataLoader(testset,
-                                             batch_size=int(len(testset) / 10),
+                                             batch_size=alg_config['test_batch_size'],
                                              drop_last=False,
                                              shuffle=False)
 
     server_logger = Logger(f"ServerHandler",
                            os.path.join(args.out_dir, f"server_handler.txt"))
-    handler = FedDynServerHandler(model,
-                                  global_round=alg_config["round"],
+    handler = FedDynServerHandler(global_round=alg_config["round"],
                                   sample_ratio=alg_config["sample_ratio"],
                                   test_loader=testloader,
+                                  train_loader=trainloader,
                                   cuda=True,
                                   logger=server_logger,
                                   args=alg_config)

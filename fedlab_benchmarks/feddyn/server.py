@@ -19,12 +19,11 @@ from fedlab.core.network import DistNetwork
 from fedlab.core.server.manager import ServerSynchronousManager
 from fedlab.core.server.handler import SyncParameterServerHandler
 from fedlab.core.network import DistNetwork
-from fedlab.core.communicator import Package, PackageProcessor
 
 from fedlab.utils.functional import AverageMeter
 from fedlab.utils.functional import load_dict
 from fedlab.utils.dataset import functional as dataF
-from fedlab.utils import MessageCode, SerializationTool, Aggregators
+from fedlab.utils import SerializationTool, Aggregators
 
 from config import local_grad_vector_file_pattern, clnt_params_file_pattern
 
@@ -56,53 +55,28 @@ def write_file(acces, losses, config):
         "{}_{}_{}_{}.txt".format(config['partition'], config['network'],
                                  config['dataset'], config['run']), "w")
 
+    key_name = ['avg_mdl_train', 'avg_mdl_test',
+                'all_mdl_train', 'all_mdl_test',
+                'cld_mdl_train', 'cld_mdl_test']
+
     record.write(str(config) + "\n")
-    record.write(str(losses) + "\n")
-    record.write(str(acces) + "\n")
+    for key in key_name:
+        record.write(f"{key}_loss:" + str(losses[key]) + "\n")
+        record.write(f"{key}_acc:" + str(acces[key]) + "\n")
     record.close()
-
-
-class RecodeHandler(SyncParameterServerHandler):
-    def __init__(self,
-                 model,
-                 test_loader,
-                 global_round=5,
-                 cuda=False,
-                 sample_ratio=1.0,
-                 logger=None,
-                 config=None):
-        super().__init__(model,
-                         global_round=global_round,
-                         cuda=cuda,
-                         sample_ratio=sample_ratio,
-                         logger=logger)
-
-        self.test_loader = test_loader
-        self.loss_ = []
-        self.acc_ = []
-        self.config = config
-
-    def _update_model(self, model_parameters_list):
-        super()._update_model(model_parameters_list)
-
-        loss, acc = evaluate(self._model, torch.nn.CrossEntropyLoss(),
-                             self.test_loader)
-
-        self.loss_.append(loss)
-        self.acc_.append(acc)
-
-        write_file(self.acc_, self.loss_, self.config)
 
 
 class FedDynServerHandler(SyncParameterServerHandler):
     def __init__(self,
-                 model,
                  test_loader,
+                 train_loader,
                  global_round=5,
                  cuda=False,
                  sample_ratio=1.0,
                  logger=None,
                  args=None):
+        # get basic model
+        model = getattr(models, args['model_name'])(args['model_name'])
         super().__init__(model,
                          global_round=global_round,
                          cuda=cuda,
@@ -110,11 +84,17 @@ class FedDynServerHandler(SyncParameterServerHandler):
                          logger=logger)
 
         self.test_loader = test_loader
-        self.loss_ = []
-        self.acc_ = []
+        self.train_loader = train_loader
+        self.cld_mdl_test_loss, self.cld_mdl_test_acc = [], []
+        self.cld_mdl_train_loss, self.cld_mdl_train_acc = [], []
+        self.avg_mdl_test_loss, self.avg_mdl_test_acc = [], []
+        self.avg_mdl_train_loss, self.avg_mdl_train_acc = [], []
+        self.all_mdl_test_loss, self.all_mdl_test_acc = [], []
+        self.all_mdl_train_loss, self.all_mdl_train_acc = [], []
         self.args = args
         self.local_param_list = []
         num_clients = args['num_clients']
+        # file params initialization
         serialized_params = SerializationTool.serialize_model(model)
         zeros_params = torch.zeros(serialized_params.shape[0])
         for cid in range(num_clients):
@@ -140,6 +120,66 @@ class FedDynServerHandler(SyncParameterServerHandler):
         cld_mdl_param = avg_mdl_param + avg_local_grad
         # load latest cloud model params into server model
         SerializationTool.deserialize_model(self._model, cld_mdl_param)
+
+        # =========== Evaluate model on train/test set
+        avg_model = getattr(models, self.args['model_name'])(self.args['model_name'])
+        SerializationTool.deserialize_model(avg_model, avg_mdl_param)
+
+        all_model = getattr(models, self.args['model_name'])(self.args['model_name'])
+        clnt_params_list = []
+        for cid in range(self.client_num_in_total):
+            clnt_params_file = clnt_params_file_pattern.format(cid=cid)
+            curr_clnt_params = torch.load(clnt_params_file)
+            clnt_params_list.append(curr_clnt_params)
+        all_model_params = Aggregators.fedavg_aggregate(clnt_params_list)
+        SerializationTool.deserialize_model(all_model, all_model_params)
+
+        # evaluate on test set
+        cld_mdl_test_loss, cld_mdl_test_acc = evaluate(self._model, torch.nn.CrossEntropyLoss(),
+                                                       self.test_loader)
+        avg_mdl_test_loss, avg_mdl_test_acc = evaluate(avg_model, torch.nn.CrossEntropyLoss(),
+                                                       self.test_loader)
+        all_mdl_test_loss, all_mdl_test_acc = evaluate(all_model, torch.nn.CrossEntropyLoss(),
+                                                       self.test_loader)
+        self.cld_mdl_test_loss.append(cld_mdl_test_loss)
+        self.cld_mdl_test_acc.append(cld_mdl_test_acc)
+        self.avg_mdl_test_loss.append(avg_mdl_test_loss)
+        self.avg_mdl_test_acc.append(avg_mdl_test_acc)
+        self.all_mdl_test_loss.append(all_mdl_test_loss)
+        self.all_mdl_test_acc.append(all_mdl_test_acc)
+
+        # evaluate on train set
+        cld_mdl_train_loss, cld_mdl_train_acc = evaluate(self._model, torch.nn.CrossEntropyLoss(),
+                                                         self.train_loader)
+        avg_mdl_train_loss, avg_mdl_train_acc = evaluate(avg_model, torch.nn.CrossEntropyLoss(),
+                                                         self.train_loader)
+        all_mdl_train_loss, all_mdl_train_acc = evaluate(all_model, torch.nn.CrossEntropyLoss(),
+                                                         self.train_loader)
+        self.cld_mdl_train_loss.append(cld_mdl_train_loss)
+        self.cld_mdl_train_acc.append(cld_mdl_train_acc)
+        self.avg_mdl_train_loss.append(avg_mdl_train_loss)
+        self.avg_mdl_train_acc.append(avg_mdl_train_acc)
+        self.all_mdl_train_loss.append(all_mdl_train_loss)
+        self.all_mdl_train_acc.append(all_mdl_train_acc)
+
+        # write into file
+        acces = {
+            'avg_mdl_train': self.avg_mdl_train_acc,
+            'avg_mdl_test': self.avg_mdl_test_acc,
+            'all_mdl_train': self.all_mdl_train_acc,
+            'all_mdl_test': self.all_mdl_test_acc,
+            'cld_mdl_train': self.cld_mdl_train_acc,
+            'cld_mdl_test': self.cld_mdl_test_acc
+        }
+        losses = {
+            'avg_mdl_train': self.avg_mdl_train_loss,
+            'avg_mdl_test': self.avg_mdl_test_loss,
+            'all_mdl_train': self.all_mdl_train_loss,
+            'all_mdl_test': self.all_mdl_test_loss,
+            'cld_mdl_train': self.cld_mdl_train_loss,
+            'cld_mdl_test': self.cld_mdl_test_loss
+        }
+        write_file(acces, losses, self.args)
 
         # =========== reset cache cnt
         self.cache_cnt = 0
