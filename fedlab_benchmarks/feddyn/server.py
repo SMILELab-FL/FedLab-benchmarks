@@ -86,8 +86,8 @@ class FedDynServerHandler(SyncParameterServerHandler):
         serialized_params = SerializationTool.serialize_model(model)
         zeros_params = torch.zeros(serialized_params.shape[0])
         for cid in range(num_clients):
-            local_grad_vector_file = local_grad_vector_file_pattern.format(cid=cid)
-            clnt_params_file = clnt_params_file_pattern.format(cid=cid)
+            local_grad_vector_file = os.path.join(self.args['out_dir'], local_grad_vector_file_pattern.format(cid=cid))
+            clnt_params_file = os.path.join(self.args['out_dir'], clnt_params_file_pattern.format(cid=cid))
             torch.save(zeros_params, local_grad_vector_file)
             torch.save(serialized_params, clnt_params_file)
 
@@ -100,7 +100,7 @@ class FedDynServerHandler(SyncParameterServerHandler):
         # read serialized params of all clients from local files and average them
         local_grad_vector_list = []
         for cid in range(self.client_num_in_total):
-            local_grad_vector_file = local_grad_vector_file_pattern.format(cid=cid)
+            local_grad_vector_file = os.path.join(self.args['out_dir'], local_grad_vector_file_pattern.format(cid=cid))
             curr_local_grad_vector = torch.load(local_grad_vector_file)
             local_grad_vector_list.append(curr_local_grad_vector)
         avg_local_grad = Aggregators.fedavg_aggregate(local_grad_vector_list)
@@ -117,7 +117,7 @@ class FedDynServerHandler(SyncParameterServerHandler):
         all_model = getattr(models, self.args['model_name'])(self.args['model_name'])
         clnt_params_list = []
         for cid in range(self.client_num_in_total):
-            clnt_params_file = clnt_params_file_pattern.format(cid=cid)
+            clnt_params_file = os.path.join(self.args['out_dir'], clnt_params_file_pattern.format(cid=cid))
             curr_clnt_params = torch.load(clnt_params_file)
             clnt_params_list.append(curr_clnt_params)
         all_model_params = Aggregators.fedavg_aggregate(clnt_params_list)

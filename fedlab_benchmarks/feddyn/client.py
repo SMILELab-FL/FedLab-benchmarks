@@ -112,7 +112,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                 self._LOGGER.info(
                     f"Client {client_id}, Epoch {e + 1}/{epochs}, Training Loss: {epoch_loss:.4f}")
 
-        self._LOGGER.info(f"_train_alone(): Client {client_id}, Global Round {self.round} DONE")
+        self._LOGGER.info(f"_train_alone(): Client {client_id}, Global Round {self.round + 1} DONE")
 
     def train(self, model_parameters, id_list, aggregate=False):
         param_list = []
@@ -130,7 +130,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             data_loader = self._get_dataloader(client_id=cid)
             # read local grad vector from files
             global_cid = self._local_to_global_map(cid)
-            local_grad_vector_file = local_grad_vector_file_pattern.format(cid=global_cid)
+            local_grad_vector_file = os.path.join(self.args['out_dir'], local_grad_vector_file_pattern.format(cid=global_cid))
             local_grad_vector = torch.load(local_grad_vector_file)  # TODO: need check here
             alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[cid]
 
@@ -145,7 +145,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                               epochs=epochs)
             param_list.append(self.model_parameters)
             # save serialized params of current client into file
-            clnt_params_file = clnt_params_file_pattern.format(cid=global_cid)
+            clnt_params_file = os.path.join(self.args['out_dir'], clnt_params_file_pattern.format(cid=global_cid))
             torch.save(self.model_parameters, clnt_params_file)
             self._LOGGER.info(f"client {cid} serialized params save to {clnt_params_file}")
 

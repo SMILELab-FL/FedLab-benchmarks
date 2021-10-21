@@ -27,7 +27,7 @@ balance_iid_data_config = {
 debug_config = {
     'num_clients': 30,
     'model_name': 'Cifar10Net',  # Model type
-    'round': 3,
+    'round': 5,
     'save_period': 2,
     'weight_decay': 1e-3,
     'batch_size': 256,
@@ -45,5 +45,5 @@ debug_config = {
 }
 
 # usage: local_params_file_pattern.format(cid=cid)
-local_grad_vector_file_pattern = "./Output/client_{cid:03d}_local_grad_vector.pt"  # accumulated model gradient
-clnt_params_file_pattern = "./Output/client_{cid:03d}_clnt_params.pt"  # latest model param
+local_grad_vector_file_pattern = "client_{cid:03d}_local_grad_vector.pt"  # accumulated model gradient
+clnt_params_file_pattern = "client_{cid:03d}_clnt_params.pt"  # latest model param
