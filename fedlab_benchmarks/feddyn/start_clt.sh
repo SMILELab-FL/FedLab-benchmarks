@@ -1,5 +1,5 @@
 #!/bin/bash
-ClientRankNum=3
+ClientRankNum=10
 ClientNumPerRank=10
 ClientNum=$(($ClientNumPerRank * $ClientRankNum))
 WorldSize=$(($ClientRankNum + 1))
