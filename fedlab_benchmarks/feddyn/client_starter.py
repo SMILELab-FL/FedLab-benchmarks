@@ -38,10 +38,10 @@ if __name__ == "__main__":
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
 
     # get basic config
-    # if args.partition == 'iid':
-    # alg_config = cifar10_config
-    # data_config = balance_iid_data_config
-    alg_config = debug_config
+    if args.partition == 'iid':
+        alg_config = cifar10_config
+        data_config = balance_iid_data_config
+    # alg_config = debug_config
 
     # get basic model
     model = getattr(models, alg_config['model_name'])(alg_config['model_name'])

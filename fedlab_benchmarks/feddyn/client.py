@@ -146,7 +146,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             # save serialized params of current client into file
             clnt_params_file = os.path.join(self.args['out_dir'], clnt_params_file_pattern.format(cid=global_cid))
             torch.save(self.model_parameters, clnt_params_file)
-            self._LOGGER.info(f"Round {self.round + 1}: Client {cid} serialized params save to {clnt_params_file}")
+            self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} serialized params save to {clnt_params_file}")
 
             # update local gradient vector of current client, and save to file
             # print(f"local_grad_vector.device={local_grad_vector.device}")
@@ -154,9 +154,9 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             # print(f"model_parameters.device={model_parameters.device}")
             local_grad_vector += self.model_parameters - model_parameters
             torch.save(local_grad_vector, local_grad_vector_file)
-            self._LOGGER.info(f"Round {self.round + 1}: Client {cid} serialized gradients save to {local_grad_vector_file}")
+            self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} serialized gradients save to {local_grad_vector_file}")
 
-            self._LOGGER.info(f"Round {self.round + 1}: Client {client_id} DONE")
+            self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} DONE")
 
         self._LOGGER.info(f"Round {self.round + 1}: Serial Trainer DONE")
         self.round += 1  # trainer global round counter update
