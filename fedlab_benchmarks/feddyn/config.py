@@ -10,10 +10,11 @@ cifar10_config = {
     'lr_decay_per_round': 1,
     'epochs': 5,
     'lr': 0.1,
-    'print_per': 1,
+    'print_freq': 1,
     'alpha_coef': 1e-2,
     'max_norm': 10,
     'sample_ratio': 1,
+    'partition': 'iid',
 }
 
 balance_iid_data_config = {
@@ -35,10 +36,11 @@ debug_config = {
     'lr_decay_per_round': 1,
     'epochs': 2,
     'lr': 0.1,
-    'print_per': 1,
+    'print_freq': 1,
     'alpha_coef': 1e-2,
     'max_norm': 10,
     'sample_ratio': 1,
+    'partition': 'iid',
 }
 
 # usage: local_params_file_pattern.format(cid=cid)

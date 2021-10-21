@@ -3,6 +3,7 @@ import torch
 import os
 import numpy as np
 import sys
+
 sys.path.append("../../../FedLab/")
 
 from fedlab.core.client.scale.trainer import SubsetSerialTrainer
@@ -87,6 +88,9 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                     else:
                         local_par_list = torch.cat((local_par_list, param.reshape(-1)), 0)
 
+                # print(f"local_par_list.device={local_par_list.device}")
+                # print(f"avg_mdl_param.device={avg_mdl_param.device}")
+                # print(f"local_grad_vector.device={local_grad_vector.device}")
                 loss_algo = alpha_coef * torch.sum(
                     local_par_list * (-avg_mdl_param + local_grad_vector))
                 loss = loss_f_i + loss_algo
@@ -127,13 +131,13 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             # read local grad vector from files
             global_cid = self._local_to_global_map(cid)
             local_grad_vector_file = local_grad_vector_file_pattern.format(cid=global_cid)
-            local_grad_vector = torch.load(local_grad_vector_file,
-                                           map_location=self.gpu)  # TODO: need check here
+            local_grad_vector = torch.load(local_grad_vector_file)  # TODO: need check here
             alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[cid]
 
             self._train_alone(cld_mdl_params=model_parameters,
-                              avg_mdl_param=model_parameters.data,  # can only be *.data !!
-                              local_grad_vector=local_grad_vector.data,
+                              avg_mdl_param=model_parameters.data.cuda(self.gpu),
+                              # can only be *.data !!
+                              local_grad_vector=local_grad_vector.data.cuda(self.gpu),
                               train_loader=data_loader,
                               client_id=cid,
                               alpha_coef=alpha_coef_adpt,
@@ -146,6 +150,9 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             self._LOGGER.info(f"client {cid} serialized params save to {clnt_params_file}")
 
             # update local gradient vector of current client, and save to file
+            # print(f"local_grad_vector.device={local_grad_vector.device}")
+            # print(f"self.model_parameters.device={self.model_parameters.device}")
+            # print(f"model_parameters.device={model_parameters.device}")
             local_grad_vector += self.model_parameters - model_parameters
             torch.save(local_grad_vector, local_grad_vector_file)
             self._LOGGER.info(f"client {cid} serialized gradients save to {local_grad_vector_file}")

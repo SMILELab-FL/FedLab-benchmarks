@@ -108,6 +108,7 @@ class FedDynServerHandler(SyncParameterServerHandler):
         cld_mdl_param = avg_mdl_param + avg_local_grad
         # load latest cloud model params into server model
         SerializationTool.deserialize_model(self._model, cld_mdl_param)
+        self._LOGGER.info(f"Server model update DONE")
 
         # =========== Evaluate model on train/test set
         avg_model = getattr(models, self.args['model_name'])(self.args['model_name'])
@@ -135,6 +136,7 @@ class FedDynServerHandler(SyncParameterServerHandler):
         self.avg_mdl_test_acc.append(avg_mdl_test_acc)
         self.all_mdl_test_loss.append(all_mdl_test_loss)
         self.all_mdl_test_acc.append(all_mdl_test_acc)
+        self._LOGGER.info(f"Server model evaluation on test set done")
 
         # evaluate on train set
         cld_mdl_train_loss, cld_mdl_train_acc = evaluate(self._model, torch.nn.CrossEntropyLoss(),
@@ -149,6 +151,7 @@ class FedDynServerHandler(SyncParameterServerHandler):
         self.avg_mdl_train_acc.append(avg_mdl_train_acc)
         self.all_mdl_train_loss.append(all_mdl_train_loss)
         self.all_mdl_train_acc.append(all_mdl_train_acc)
+        self._LOGGER.info(f"Server model evaluation on train set done")
 
         # write into file
         acces = {
@@ -173,6 +176,7 @@ class FedDynServerHandler(SyncParameterServerHandler):
         torch.save(self._model.state_dict(), os.path.join(self.args['out_dir'], "cld_model.pkl"))
         torch.save(avg_model.state_dict(), os.path.join(self.args['out_dir'], "avg_model.pkl"))
         torch.save(all_model.state_dict(), os.path.join(self.args['out_dir'], "all_model.pkl"))
+        self._LOGGER.info(f"Server model save done")
 
         # =========== reset cache cnt
         self.cache_cnt = 0
