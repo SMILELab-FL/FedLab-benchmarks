@@ -1,6 +1,8 @@
 import torch
 
+import os
 import sys
+
 sys.path.append("../../../FedLab/")
 
 from fedlab.core.network import DistNetwork
@@ -95,7 +97,6 @@ class FedDynServerHandler(SyncParameterServerHandler):
                 len(model_parameters_list)))
         # =========== update server model
         avg_mdl_param = Aggregators.fedavg_aggregate(model_parameters_list)
-        # avg_local_grad is avg of local gradients from all clients
         # read serialized params of all clients from local files and average them
         local_grad_vector_list = []
         for cid in range(self.client_num_in_total):
@@ -103,6 +104,7 @@ class FedDynServerHandler(SyncParameterServerHandler):
             curr_local_grad_vector = torch.load(local_grad_vector_file)
             local_grad_vector_list.append(curr_local_grad_vector)
         avg_local_grad = Aggregators.fedavg_aggregate(local_grad_vector_list)
+
         cld_mdl_param = avg_mdl_param + avg_local_grad
         # load latest cloud model params into server model
         SerializationTool.deserialize_model(self._model, cld_mdl_param)
@@ -166,6 +168,11 @@ class FedDynServerHandler(SyncParameterServerHandler):
             'cld_mdl_test': self.cld_mdl_test_loss
         }
         write_file(acces, losses, self.args)
+
+        # =========== save model to file
+        torch.save(self._model.state_dict(), os.path.join(self.args['out_dir'], "cld_model.pkl"))
+        torch.save(avg_model.state_dict(), os.path.join(self.args['out_dir'], "avg_model.pkl"))
+        torch.save(all_model.state_dict(), os.path.join(self.args['out_dir'], "all_model.pkl"))
 
         # =========== reset cache cnt
         self.cache_cnt = 0

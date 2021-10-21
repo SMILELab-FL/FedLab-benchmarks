@@ -32,16 +32,17 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
         self.rank = rank
         self.round = 0  # global round, try not to use package to inform global round
 
-    def _train_alone(self, cld_model_params,
+    def _train_alone(self,
+                     cld_mdl_params,
+                     avg_mdl_param,
+                     local_grad_vector,
                      train_loader,
                      client_id,
                      lr,
                      alpha_coef,
-                     epochs,
-                     avg_mdl_param,
-                     local_grad_vector):
+                     epochs):
         """
-        cld_model_params: serialized model params from cloud model (server model)
+        cld_mdl_params: serialized model params of cloud model (server model)
         train_loader:
         client_id:
         lr:
@@ -54,7 +55,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
         max_norm = self.args['max_norm']
         print_freq = self.args['print_freq']
 
-        SerializationTool.deserialize_model(self._model, cld_model_params)  # load model params
+        SerializationTool.deserialize_model(self._model, cld_mdl_params)  # load model params
         loss_fn = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(self._model.parameters(),
                                     lr=lr,
@@ -130,14 +131,14 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                                            map_location=self.gpu)  # TODO: need check here
             alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[cid]
 
-            self._train_alone(cld_model_params=model_parameters,
+            self._train_alone(cld_mdl_params=model_parameters,
+                              avg_mdl_param=model_parameters.data,  # can only be *.data !!
+                              local_grad_vector=local_grad_vector.data,
                               train_loader=data_loader,
                               client_id=cid,
                               alpha_coef=alpha_coef_adpt,
                               lr=lr,
-                              epochs=epochs,
-                              avg_mdl_param=model_parameters.data,  # can only be *.data !!
-                              local_grad_vector=local_grad_vector.data)
+                              epochs=epochs)
             param_list.append(self.model_parameters)
             # save serialized params of current client into file
             clnt_params_file = clnt_params_file_pattern.format(cid=global_cid)
@@ -149,7 +150,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             torch.save(local_grad_vector, local_grad_vector_file)
             self._LOGGER.info(f"client {cid} serialized gradients save to {local_grad_vector_file}")
 
-        self._LOGGER.info(f"train(): Serial Trainer Global Round {self.round} done")
+        self._LOGGER.info(f"Serial Trainer Global Round {self.round} done")
         self.round += 1  # trainer global round counter update
 
         if aggregate is True and self.aggregator is not None:

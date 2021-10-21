@@ -95,6 +95,7 @@ if __name__ == "__main__":
     # trainer_logger = Logger(f"ClientSerialTrainer-Rank-{args.rank:2d}")
     trainer_logger = Logger(f"ClientTrainer-Rank-{args.rank:2d}",
                             os.path.join(args.out_dir, f"ClientTrainer_rank_{args.rank:2d}.txt"))
+    alg_config['out_dir'] = args.out_dir
     trainer = FedDynSerialTrainer(model=model,
                                   dataset=trainset,
                                   data_slices=sub_data_indices,

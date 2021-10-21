@@ -8,6 +8,7 @@ import argparse
 import os
 from pathlib import Path
 import sys
+
 sys.path.append("../../../FedLab/")
 
 from fedlab.core.network import DistNetwork
@@ -68,6 +69,8 @@ if __name__ == '__main__':
 
     server_logger = Logger(f"ServerHandler",
                            os.path.join(args.out_dir, f"server_handler.txt"))
+
+    alg_config['out_dir'] = args.out_dir
     handler = FedDynServerHandler(global_round=alg_config["round"],
                                   sample_ratio=alg_config["sample_ratio"],
                                   test_loader=testloader,
