@@ -67,8 +67,8 @@ if __name__ == '__main__':
                                              drop_last=False,
                                              shuffle=False)
 
-    server_logger = Logger(f"ServerHandler",
-                           os.path.join(args.out_dir, f"server_handler.txt"))
+    server_logger = Logger("ServerHandler",
+                           os.path.join(args.out_dir, "server_handler.txt"))
 
     alg_config['out_dir'] = args.out_dir
     handler = FedDynServerHandler(global_round=alg_config["round"],
@@ -83,5 +83,7 @@ if __name__ == '__main__':
                           world_size=args.world_size,
                           rank=0)
 
-    manager_ = ScaleSynchronousManager(network=network, handler=handler)
+    manager_ = ScaleSynchronousManager(network=network, handler=handler, 
+                                       logger=Logger("ServerManager",
+                                                     os.path.join(args.out_dir, "server_manager.txt")))
     manager_.run()

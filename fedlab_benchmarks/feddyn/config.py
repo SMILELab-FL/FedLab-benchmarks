@@ -41,6 +41,7 @@ debug_config = {
     'max_norm': 10,
     'sample_ratio': 1,
     'partition': 'iid',
+    'dataset': 'cifar10'
 }
 
 # usage: local_params_file_pattern.format(cid=cid)
