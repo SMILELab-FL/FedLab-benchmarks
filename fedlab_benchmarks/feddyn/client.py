@@ -182,3 +182,27 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
         """
         global_client_id = (self.rank - 1) * client_num_per_rank + local_client_id
         return global_client_id
+
+
+class FedAvgSerialTrainer(SubsetSerialTrainer):
+    def __init__(self, model,
+                 dataset,
+                 data_slices,
+                 client_weights=None,
+                 rank=None,
+                 logger=Logger(),
+                 cuda=True,
+                 args=None):
+        super().__init__(model,
+                         dataset,
+                         data_slices,
+                         aggregator=None,
+                         logger=logger,
+                         cuda=cuda,
+                         args=args)
+        self.client_weights = client_weights
+        self.rank = rank
+        self.round = 0 
+
+    def _train_alone(self, model_parameters):
+        pass

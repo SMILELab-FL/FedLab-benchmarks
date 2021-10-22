@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--world_size', type=int)
     parser.add_argument('--ethernet', type=str, default=None)
 
-    parser.add_argument("--partition", type=str, help="Choose from ['iid', 'niid']")
+    parser.add_argument("--partition", type=str, default='iid', help="Choose from ['iid', 'niid']")
     parser.add_argument("--model-name", type=str)
     parser.add_argument("--data-dir", type=str, default='../../../datasets')
     parser.add_argument("--out-dir", type=str, default='./Output')

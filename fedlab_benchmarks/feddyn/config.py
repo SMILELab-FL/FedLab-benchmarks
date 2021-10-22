@@ -15,6 +15,7 @@ cifar10_config = {
     'max_norm': 10,
     'sample_ratio': 1,
     'partition': 'iid',
+    'dataset': 'cifar10',
 }
 
 balance_iid_data_config = {

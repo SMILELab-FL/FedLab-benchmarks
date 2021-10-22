@@ -7,9 +7,16 @@
 
 
 
-如何打印client trainer的编号：直接获取rank（这样就比较脏）
+
 
 ### Setting
 
 - ``n_clnt``: num_clients
+
+
+
+
+
+- machine09上在跑cifar10，simpleCNN，iid-balanced的实验
+- 需要重新整理一下原论文给出的实验和参数
 
