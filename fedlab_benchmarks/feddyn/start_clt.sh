@@ -12,7 +12,7 @@ sleep 4s
 for ((i = 1; i <= ${ClientRankNum}; i++)); do
   {
     echo "client ${i} started"
-    python client_starter.py --world_size ${WorldSize} --rank ${i} --client-num-per-rank ${ClientNumPerRank} --out-dir ./Output/run1 &
+    python client_starter.py --world_size ${WorldSize} --rank ${i} --client-num-per-rank ${ClientNumPerRank} --alg FedAvg --out-dir ./Output/FedAvg/run1 &
     sleep 2s
   }
 done

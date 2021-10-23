@@ -27,6 +27,7 @@ if __name__ == "__main__":
     parser.add_argument("--world_size", type=int)
     parser.add_argument("--rank", type=int)
     parser.add_argument("--client-num-per-rank", type=int, default=10)
+    parser.add_argument("--alg", type=str, default='FedDyn')
     parser.add_argument("--ethernet", type=str, default=None)
 
     parser.add_argument("--partition", type=str, default='iid', help="Choose from ['iid', 'niid']")

@@ -14,9 +14,10 @@ sys.path.append("../../../FedLab/")
 from fedlab.core.network import DistNetwork
 from fedlab.core.server.scale.manager import ScaleSynchronousManager
 from fedlab.utils.logger import Logger
+from fedlab.utils.functional import load_dict
 
 from config import cifar10_config, balance_iid_data_config, debug_config
-from server import FedDynServerHandler
+from server import FedDynServerHandler, FedAvgServerHandler, FedAvgServerManager
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='FL server example')
@@ -28,6 +29,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--partition", type=str, default='iid', help="Choose from ['iid', 'niid']")
     parser.add_argument("--model-name", type=str)
+    parser.add_argument("--alg", type=str, default='FedDyn')
     parser.add_argument("--data-dir", type=str, default='../../../datasets')
     parser.add_argument("--out-dir", type=str, default='./Output')
     args = parser.parse_args()
@@ -40,6 +42,17 @@ if __name__ == '__main__':
         alg_config = cifar10_config
         data_config = balance_iid_data_config
     # alg_config = debug_config
+
+    if args.partition == 'iid':
+        data_indices = load_dict(os.path.join(args.out_dir, "cifar10_iid.pkl"))
+    elif args.partition == 'noniid':
+        data_indices = load_dict(os.path.join(args.out_dir, "cifar10_noniid.pkl"))
+    else:
+        raise ValueError(f"args.partition '{args.partition}' is not supported yet")
+
+    total_train_sample_num = sum(list(data_indices.values()))
+    weight_list = {cid: len(data_indices[cid]) / total_train_sample_num for cid in
+                   range(alg_config['num_clients'])}
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),
@@ -71,19 +84,34 @@ if __name__ == '__main__':
                            os.path.join(args.out_dir, "server_handler.txt"))
 
     alg_config['out_dir'] = args.out_dir
-    handler = FedDynServerHandler(global_round=alg_config["round"],
-                                  sample_ratio=alg_config["sample_ratio"],
-                                  test_loader=testloader,
-                                  train_loader=trainloader,
-                                  cuda=True,
-                                  logger=server_logger,
-                                  args=alg_config)
 
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,
                           rank=0)
+    manager_logger = Logger("ServerManager", os.path.join(args.out_dir, "server_manager.txt"))
 
-    manager_ = ScaleSynchronousManager(network=network, handler=handler, 
-                                       logger=Logger("ServerManager",
-                                                     os.path.join(args.out_dir, "server_manager.txt")))
-    manager_.run()
+    if args.alg == 'FedDyn':
+        handler = FedDynServerHandler(global_round=alg_config["round"],
+                                      sample_ratio=alg_config["sample_ratio"],
+                                      test_loader=testloader,
+                                      train_loader=trainloader,
+                                      cuda=True,
+                                      logger=server_logger,
+                                      args=alg_config)
+
+        manager = ScaleSynchronousManager(network=network, handler=handler, logger=manager_logger)
+
+    elif args.alg == 'FedAvg':
+        handler = FedAvgServerHandler(global_round=alg_config["round"],
+                                      sample_ratio=alg_config["sample_ratio"],
+                                      test_loader=testloader,
+                                      weight_list=weight_list,
+                                      cuda=True,
+                                      logger=server_logger,
+                                      args=alg_config)
+        manager = FedAvgServerManager(network=network, handler=handler, logger=manager_logger)
+
+    else:
+        raise ValueError(f"args.alg={args.alg} is not supported.")
+
+    manager.run()

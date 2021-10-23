@@ -112,7 +112,6 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                 self._LOGGER.info(
                     f"Round {self.round + 1}: Client {client_id:3d}, Epoch {e + 1}/{epochs}, Training Loss: {epoch_loss:.4f}")
 
-
     def train(self, model_parameters, id_list, aggregate=False):
         param_list = []
         orig_lr = self.args['lr']
@@ -129,7 +128,9 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             data_loader = self._get_dataloader(client_id=cid)
             # read local grad vector from files
             global_cid = self._local_to_global_map(cid)
-            local_grad_vector_file = os.path.join(self.args['out_dir'], local_grad_vector_file_pattern.format(cid=global_cid))
+            local_grad_vector_file = os.path.join(self.args['out_dir'],
+                                                  local_grad_vector_file_pattern.format(
+                                                      cid=global_cid))
             local_grad_vector = torch.load(local_grad_vector_file)  # TODO: need check here
             alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[cid]
 
@@ -144,9 +145,11 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                               epochs=epochs)
             param_list.append(self.model_parameters)
             # save serialized params of current client into file
-            clnt_params_file = os.path.join(self.args['out_dir'], clnt_params_file_pattern.format(cid=global_cid))
+            clnt_params_file = os.path.join(self.args['out_dir'],
+                                            clnt_params_file_pattern.format(cid=global_cid))
             torch.save(self.model_parameters, clnt_params_file)
-            self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} serialized params save to {clnt_params_file}")
+            self._LOGGER.info(
+                f"Round {self.round + 1}: Client {cid:3d} serialized params save to {clnt_params_file}")
 
             # update local gradient vector of current client, and save to file
             # print(f"local_grad_vector.device={local_grad_vector.device}")
@@ -154,7 +157,8 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             # print(f"model_parameters.device={model_parameters.device}")
             local_grad_vector += self.model_parameters - model_parameters
             torch.save(local_grad_vector, local_grad_vector_file)
-            self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} serialized gradients save to {local_grad_vector_file}")
+            self._LOGGER.info(
+                f"Round {self.round + 1}: Client {cid:3d} serialized gradients save to {local_grad_vector_file}")
 
             self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} DONE")
 
@@ -202,7 +206,51 @@ class FedAvgSerialTrainer(SubsetSerialTrainer):
                          args=args)
         self.client_weights = client_weights
         self.rank = rank
-        self.round = 0 
+        self.round = 0
 
-    def _train_alone(self, model_parameters):
-        pass
+    def train(self, model_parameters, id_list, aggregate=False):
+        param_list = []
+        self._LOGGER.info(
+            "Local training with client id list: {}".format(id_list))
+        orig_lr = self.args['lr']
+        lr_decay_per_round = self.args['lr_decay_per_round']
+        lr = orig_lr * (lr_decay_per_round ** self.round)  # using learning rate decay
+        weight_decay = self.args['weight_decay']
+        for cid in id_list:
+            self._LOGGER.info(
+                "Starting training procedure of client [{}]".format(cid))
+
+            data_loader = self._get_dataloader(client_id=cid)
+            self._train_alone(model_parameters=model_parameters,
+                              train_loader=data_loader, lr=lr, weight_decay=weight_decay)
+            param_list.append(self.model_parameters * self.client_weights[cid])
+
+        self._LOGGER.info(f"Round {self.round + 1}: Serial Trainer DONE")
+        self.round += 1  # trainer global round counter update
+
+        return param_list
+
+    def _train_alone(self, model_parameters, train_loader, lr, weight_decay, max_norm=10):
+        epochs = self.args["epochs"]
+        SerializationTool.deserialize_model(self._model, model_parameters)
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(self._model.parameters(), lr=lr, weight_decay=weight_decay)
+        self._model.train()
+
+        for e in range(epochs):
+            for data, target in train_loader:
+                if self.cuda:
+                    data = data.cuda(self.gpu)
+                    target = target.cuda(self.gpu)
+
+                output = self.model(data)
+
+                loss = criterion(output, target)
+
+                optimizer.zero_grad()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(parameters=self._model.parameters(),
+                                               max_norm=max_norm)  # Clip gradients
+                optimizer.step()
+
+        return self.model_parameters
