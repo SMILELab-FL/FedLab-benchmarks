@@ -50,7 +50,7 @@ if __name__ == '__main__':
     else:
         raise ValueError(f"args.partition '{args.partition}' is not supported yet")
 
-    total_train_sample_num = sum(list(data_indices.values()))
+    total_train_sample_num = sum([len(indices) for indices in data_indices.values()])
     weight_list = {cid: len(data_indices[cid]) / total_train_sample_num for cid in
                    range(alg_config['num_clients'])}
 
@@ -80,7 +80,7 @@ if __name__ == '__main__':
                                              drop_last=False,
                                              shuffle=False)
 
-    server_logger = Logger("ServerHandler",
+    handler_logger = Logger("ServerHandler",
                            os.path.join(args.out_dir, "server_handler.txt"))
 
     alg_config['out_dir'] = args.out_dir
@@ -96,7 +96,7 @@ if __name__ == '__main__':
                                       test_loader=testloader,
                                       train_loader=trainloader,
                                       cuda=True,
-                                      logger=server_logger,
+                                      logger=handler_logger,
                                       args=alg_config)
 
         manager = ScaleSynchronousManager(network=network, handler=handler, logger=manager_logger)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
                                       test_loader=testloader,
                                       weight_list=weight_list,
                                       cuda=True,
-                                      logger=server_logger,
+                                      logger=handler_logger,
                                       args=alg_config)
         manager = FedAvgServerManager(network=network, handler=handler, logger=manager_logger)
 

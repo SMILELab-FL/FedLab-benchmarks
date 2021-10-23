@@ -18,7 +18,7 @@ from fedlab.utils.functional import save_dict, load_dict
 
 import models
 from config import cifar10_config, balance_iid_data_config, debug_config
-from client import FedDynSerialTrainer
+from client import FedDynSerialTrainer, FedAvgSerialTrainer
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FedDyn client demo in FedLab")
@@ -97,13 +97,24 @@ if __name__ == "__main__":
     trainer_logger = Logger(f"ClientTrainer-Rank-{args.rank:02d}",
                             os.path.join(args.out_dir, f"ClientTrainer_rank_{args.rank:02d}.txt"))
     alg_config['out_dir'] = args.out_dir
-    trainer = FedDynSerialTrainer(model=model,
-                                  dataset=trainset,
-                                  data_slices=sub_data_indices,
-                                  client_weights=sub_client_weights,
-                                  rank=args.rank,
-                                  logger=trainer_logger,
-                                  args=alg_config)
+    if args.alg=='FedDyn':
+        trainer = FedDynSerialTrainer(model=model,
+                                    dataset=trainset,
+                                    data_slices=sub_data_indices,
+                                    client_weights=sub_client_weights,
+                                    rank=args.rank,
+                                    logger=trainer_logger,
+                                    args=alg_config)
+    elif args.alg=='FedAvg':
+        trainer = FedAvgSerialTrainer(model=model,
+                                      dataset=trainset,
+                                      data_slices=sub_data_indices,
+                                      client_weights=sub_client_weights,
+                                      rank=args.rank,
+                                      logger=trainer_logger,
+                                      args=alg_config)
+    else:
+        raise ValueError(f"args.alg={args.alg} is not supported.")
 
-    manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
-    manager_.run()
+    manager = ScaleClientPassiveManager(trainer=trainer, network=network)
+    manager.run()

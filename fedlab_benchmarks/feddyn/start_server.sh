@@ -8,4 +8,9 @@ python data_partition.py --out-dir ./Output/ --partition iid --balance True --da
 echo -e "Data partition DONE.\n\n"
 sleep 4s
 
+SECONDS=0
+
 python server_starter.py --world_size 11 --partition iid --alg FedAvg --out-dir ./Output/FedAvg/run1
+
+ELAPSED="Elapsed: $(($SECONDS / 3600))hrs $((($SECONDS / 60) % 60))min $(($SECONDS % 60))sec"
+echo ELAPSED

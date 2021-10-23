@@ -1,6 +1,7 @@
 import torch
 
 import os
+import numpy as np
 import sys
 
 sys.path.append("../../../FedLab/")
@@ -34,6 +35,30 @@ def accuracy(output, target, topk=(1,)):
         res.append(correct_k.mul_(1.0 / batch_size))
     return res
 
+# # using accuracy function
+# def evaluate2(model, criterion, test_loader):
+#     model.eval()
+#     gpu = next(model.parameters()).device
+
+#     loss_ = AverageMeter()
+#     acc_ = AverageMeter()
+
+#     with torch.no_grad():
+#         for inputs, labels in test_loader:
+#             batch_size = len(labels)
+#             inputs = inputs.to(gpu)
+#             labels = labels.to(gpu)
+
+#             outputs = model(inputs)
+#             loss = criterion(outputs, labels)
+
+#             acc1 = accuracy(outputs, labels, topk=(1,))
+
+#             loss_.update(loss.item(), batch_size)
+#             acc_.update(acc1[0].item(), batch_size)
+
+#     return loss_.avg, acc_.avg
+
 
 def evaluate(model, criterion, test_loader):
     model.eval()
@@ -44,17 +69,15 @@ def evaluate(model, criterion, test_loader):
 
     with torch.no_grad():
         for inputs, labels in test_loader:
-            batch_size = len(labels)
             inputs = inputs.to(gpu)
             labels = labels.to(gpu)
 
             outputs = model(inputs)
             loss = criterion(outputs, labels)
 
-            acc1 = accuracy(outputs, labels, topk=(1,))
-
-            loss_.update(loss.item(), batch_size)
-            acc_.update(acc1.item(), batch_size)
+            _, predicted = torch.max(outputs, 1)
+            loss_.update(loss.item())
+            acc_.update(torch.sum(predicted.eq(labels)).item(), len(labels))
 
     return loss_.avg, acc_.avg
 
@@ -252,9 +275,10 @@ class FedAvgServerHandler(SyncParameterServerHandler):
             "Model parameters aggregation, number of aggregation elements {}".
                 format(len(model_parameters_list)))
         # use aggregator
-        curr_weight_sum = sum([self.weight_list[cid] for cid in self.client_this_round])
+        # curr_weight_sum = sum([self.weight_list[cid] for cid in self.client_this_round])
+        # self._LOGGER.info(f"curr_weight_sum: {curr_weight_sum}")
         serialized_parameters = Aggregators.fedavg_aggregate(
-            model_parameters_list) * len(self.client_this_round) / curr_weight_sum
+            model_parameters_list) #* len(self.client_this_round) / curr_weight_sum
         SerializationTool.deserialize_model(self._model, serialized_parameters)
 
         # evaluate on test set

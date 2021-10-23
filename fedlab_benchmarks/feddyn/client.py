@@ -218,12 +218,16 @@ class FedAvgSerialTrainer(SubsetSerialTrainer):
         weight_decay = self.args['weight_decay']
         for cid in id_list:
             self._LOGGER.info(
-                "Starting training procedure of client [{}]".format(cid))
+                f"Rank {self.rank} - Round {self.round+1} - Starting training procedure of client [{cid}]")
 
             data_loader = self._get_dataloader(client_id=cid)
             self._train_alone(model_parameters=model_parameters,
                               train_loader=data_loader, lr=lr, weight_decay=weight_decay)
-            param_list.append(self.model_parameters * self.client_weights[cid])
+            # self._LOGGER.info(f"self.model_parameters * self.client_weights[cid] shape: {(self.model_parameters * self.client_weights[cid]).shape}")
+            
+            # param_list.append(self.model_parameters * self.client_weights[cid])
+            param_list.append(self.model_parameters)
+
 
         self._LOGGER.info(f"Round {self.round + 1}: Serial Trainer DONE")
         self.round += 1  # trainer global round counter update
@@ -249,8 +253,8 @@ class FedAvgSerialTrainer(SubsetSerialTrainer):
 
                 optimizer.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(parameters=self._model.parameters(),
-                                               max_norm=max_norm)  # Clip gradients
+                # torch.nn.utils.clip_grad_norm_(parameters=self._model.parameters(),
+                #                                max_norm=max_norm)  # Clip gradients
                 optimizer.step()
 
         return self.model_parameters
