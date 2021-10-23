@@ -20,3 +20,21 @@
 - machine09上在跑cifar10，simpleCNN，iid-balanced的实验
 - 需要重新整理一下原论文给出的实验和参数
 
+
+
+### Notes
+
+FedAvg 1000 round:
+
+- duration: 
+
+  - 479.87 Min (machine14 official code)
+
+  - 160.9 Min (machine14 FedLab)
+
+    > 2021-10-23 23:54:49 ~ 2021-10-24 2:35:43
+
+- start from 0.2 accuracy
+
+- 
+

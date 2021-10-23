@@ -275,10 +275,10 @@ class FedAvgServerHandler(SyncParameterServerHandler):
             "Model parameters aggregation, number of aggregation elements {}".
                 format(len(model_parameters_list)))
         # use aggregator
-        # curr_weight_sum = sum([self.weight_list[cid] for cid in self.client_this_round])
+        curr_weight_sum = sum([self.weight_list[cid] for cid in self.client_this_round])
         # self._LOGGER.info(f"curr_weight_sum: {curr_weight_sum}")
         serialized_parameters = Aggregators.fedavg_aggregate(
-            model_parameters_list) #* len(self.client_this_round) / curr_weight_sum
+            model_parameters_list) * len(self.client_this_round) / curr_weight_sum
         SerializationTool.deserialize_model(self._model, serialized_parameters)
 
         # evaluate on test set

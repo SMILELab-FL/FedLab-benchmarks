@@ -225,8 +225,8 @@ class FedAvgSerialTrainer(SubsetSerialTrainer):
                               train_loader=data_loader, lr=lr, weight_decay=weight_decay)
             # self._LOGGER.info(f"self.model_parameters * self.client_weights[cid] shape: {(self.model_parameters * self.client_weights[cid]).shape}")
             
-            # param_list.append(self.model_parameters * self.client_weights[cid])
-            param_list.append(self.model_parameters)
+            param_list.append(self.model_parameters * self.client_weights[cid])
+            # param_list.append(self.model_parameters)
 
 
         self._LOGGER.info(f"Round {self.round + 1}: Serial Trainer DONE")
@@ -253,8 +253,8 @@ class FedAvgSerialTrainer(SubsetSerialTrainer):
 
                 optimizer.zero_grad()
                 loss.backward()
-                # torch.nn.utils.clip_grad_norm_(parameters=self._model.parameters(),
-                #                                max_norm=max_norm)  # Clip gradients
+                torch.nn.utils.clip_grad_norm_(parameters=self._model.parameters(),
+                                               max_norm=max_norm)  # Clip gradients
                 optimizer.step()
 
         return self.model_parameters
