@@ -44,9 +44,9 @@ if __name__ == '__main__':
     # alg_config = debug_config
 
     if args.partition == 'iid':
-        data_indices = load_dict(os.path.join(args.out_dir, "cifar10_iid.pkl"))
+        data_indices = load_dict(os.path.join('./Output', "cifar10_iid.pkl"))
     elif args.partition == 'noniid':
-        data_indices = load_dict(os.path.join(args.out_dir, "cifar10_noniid.pkl"))
+        data_indices = load_dict(os.path.join('./Output', "cifar10_noniid.pkl"))
     else:
         raise ValueError(f"args.partition '{args.partition}' is not supported yet")
 
