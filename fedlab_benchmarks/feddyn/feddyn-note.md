@@ -1,14 +1,5 @@
 ## FedDyn Implementation using FedLab
 
-先把可以通知communication round的demo实现：
-
-- 方案1：用package传递
-- 方案2：只在本地launch时候自动+1（这种比较简单）
-
-
-
-
-
 ### Setting
 
 - ``n_clnt``: num_clients
@@ -27,14 +18,11 @@
 FedAvg 1000 round:
 
 - duration: 
-
   - 479.87 Min (machine14 official code)
-
   - 160.9 Min (machine14 FedLab)
 
-    > 2021-10-23 23:54:49 ~ 2021-10-24 2:35:43
+FedDyn 1000 Round:
 
-- start from 0.2 accuracy
-
-- 
+- duration:
+  - 288.8 Min (machine14 FedLab)
 

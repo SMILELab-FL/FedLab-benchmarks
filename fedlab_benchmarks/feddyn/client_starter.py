@@ -83,10 +83,14 @@ if __name__ == "__main__":
                                             transform=transform_train)
 
     total_sample_num = len(trainset)
+
     sub_client_weights = {
         idx: len(data_indices[cid]) / total_sample_num
         for idx, cid in enumerate(client_id_list)
     }
+    if args.alg == 'FedDyn':
+        sub_client_weights = {key: value * alg_config['num_clients'] for key, value in
+                              sub_client_weights.items()}
 
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,
@@ -97,15 +101,15 @@ if __name__ == "__main__":
     trainer_logger = Logger(f"ClientTrainer-Rank-{args.rank:02d}",
                             os.path.join(args.out_dir, f"ClientTrainer_rank_{args.rank:02d}.txt"))
     alg_config['out_dir'] = args.out_dir
-    if args.alg=='FedDyn':
+    if args.alg == 'FedDyn':
         trainer = FedDynSerialTrainer(model=model,
-                                    dataset=trainset,
-                                    data_slices=sub_data_indices,
-                                    client_weights=sub_client_weights,
-                                    rank=args.rank,
-                                    logger=trainer_logger,
-                                    args=alg_config)
-    elif args.alg=='FedAvg':
+                                      dataset=trainset,
+                                      data_slices=sub_data_indices,
+                                      client_weights=sub_client_weights,
+                                      rank=args.rank,
+                                      logger=trainer_logger,
+                                      args=alg_config)
+    elif args.alg == 'FedAvg':
         trainer = FedAvgSerialTrainer(model=model,
                                       dataset=trainset,
                                       data_slices=sub_data_indices,
