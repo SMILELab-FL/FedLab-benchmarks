@@ -6,8 +6,6 @@
 
 
 
-
-
 - machine09上在跑cifar10，simpleCNN，iid-balanced的实验
 - 需要重新整理一下原论文给出的实验和参数
 
