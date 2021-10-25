@@ -14,7 +14,7 @@ from config import local_grad_vector_file_pattern, clnt_params_file_pattern, \
     local_grad_vector_list_file_pattern, clnt_params_list_file_pattern
 
 
-class FedDynSerialTrainer2(SubsetSerialTrainer):
+class FedDynSerialTrainer_v2(SubsetSerialTrainer):
     def __init__(self, model,
                  dataset,
                  data_slices,
@@ -145,11 +145,12 @@ class FedDynSerialTrainer2(SubsetSerialTrainer):
             self._LOGGER.info(
                 f"Round {self.round + 1}: Client {cid:3d} serialized params save to {clnt_params_file}")
 
-            # update local gradient vector of current client, and save to file
             # print(f"self.local_grad_vector_list[cid].device={self.local_grad_vector_list[cid].device}")
             # print(f"self.model_parameters.device={self.model_parameters.device}")
             # print(f"model_parameters.device={model_parameters.device}")
-            self.local_grad_vector_list[cid] += self.model_parameters - model_parameters  # update model accumulated gradients
+
+            # update accumulated gradients for current client model
+            self.local_grad_vector_list[cid] += self.model_parameters - model_parameters
             self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} DONE")
 
         torch.save(self.local_grad_vector_list, self.local_grad_vector_list_file)
@@ -158,7 +159,7 @@ class FedDynSerialTrainer2(SubsetSerialTrainer):
         self.round += 1  # trainer global round counter update
         self._LOGGER.info(f"Round {self.round + 1}: Serial Trainer DONE")
 
-        return param_list
+        return param_list, self.local_grad_vector_list
 
     def _local_to_global_map(self, local_client_id, client_num_per_rank=10):
         global_client_id = (self.rank - 1) * client_num_per_rank + local_client_id

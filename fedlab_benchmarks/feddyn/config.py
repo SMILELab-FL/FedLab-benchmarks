@@ -6,7 +6,6 @@ cifar10_config = {
     'weight_decay': 1e-3,
     'batch_size': 50,
     'test_batch_size': 50,  # no this param in official code
-    'act_prob': 1,
     'lr_decay_per_round': 1,
     'epochs': 5,
     'lr': 0.1,
