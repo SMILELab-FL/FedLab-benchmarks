@@ -12,6 +12,7 @@ torch.manual_seed(0)
 
 import argparse
 import os
+from time import time
 import random
 from copy import deepcopy
 from pathlib import Path
@@ -22,7 +23,7 @@ sys.path.append("../../../FedLab/")
 from fedlab.utils.logger import Logger
 from fedlab.utils.serialization import SerializationTool
 from fedlab.utils.aggregator import Aggregators
-from fedlab.utils.functional import get_best_gpu, save_dict, load_dict
+from fedlab.utils.functional import get_best_gpu, save_dict, load_dict, AverageMeter
 
 import models
 from utils import evaluate
@@ -139,8 +140,11 @@ if __name__ == '__main__':
 
     test_acc_hist = []
     test_loss_hist = []
+    duration_meter = AverageMeter()
     init_params = SerializationTool.serialize_model(server_model)
     clnt_params_list = [init_params.data for _ in range(num_clients)]
+    
+    start = time()
 
     for r in range(alg_config['round']):
         model_params = SerializationTool.serialize_model(server_model)
@@ -160,7 +164,6 @@ if __name__ == '__main__':
             avg_local_grad = Aggregators.fedavg_aggregate(local_grad_vector_list)
             cld_mdl_param = avg_mdl_param + avg_local_grad
             SerializationTool.deserialize_model(server_model, cld_mdl_param)
-            server_logger.info("Server model update DONE")
 
             # avg_model = getattr(models, model_name)(model_name)
             # SerializationTool.deserialize_model(avg_model, avg_mdl_param)
@@ -187,3 +190,11 @@ if __name__ == '__main__':
         test_acc_hist.append(test_acc)
         test_loss_hist.append(test_loss)
         write_file(test_acc_hist, test_loss_hist, alg_config)
+
+        duration = time() - start
+        duration_meter.update(duration)
+        duration_per_round = duration_meter.avg
+        server_logger.info(f"Round {r+1} - Server model update DONE: {duration_meter.sum()/60:.2f} min; "
+                           f"{duration_per_round:.1f} sec/round; "
+                           f"Estimated Rest Time: {(alg_config['round'] - r)*duration_per_round/60:.2f} min")
+        start = time()
