@@ -99,6 +99,7 @@ if __name__ == '__main__':
 
     test_loader = torch.utils.data.DataLoader(testset,
                                               batch_size=alg_config['test_batch_size'],
+                                              num_workers=4,
                                               drop_last=False,
                                               shuffle=False)
 

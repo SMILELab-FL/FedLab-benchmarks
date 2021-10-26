@@ -5,7 +5,7 @@ cifar10_config = {
     'save_period': 200,
     'weight_decay': 1e-3,
     'batch_size': 50,
-    'test_batch_size': 50,  # no this param in official code
+    'test_batch_size': 256,  # no this param in official code
     'lr_decay_per_round': 1,
     'epochs': 5,
     'lr': 0.1,
