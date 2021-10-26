@@ -1,6 +1,7 @@
 import torch
 
 import os
+from PIL import Image
 import fnmatch
 import numpy as np
 import sys
@@ -51,3 +52,31 @@ def evaluate(model, criterion, test_loader):
             acc_.update(torch.sum(predicted.eq(labels)).item(), len(labels))
 
     return loss_.avg, acc_.avg
+
+
+class Subset(torch.utils.data.Dataset):
+    """For data subset with different augmentation.
+    """
+
+    def __init__(self, dataset, indices, transform=None, target_transform=None):
+        self.data = []
+        for idx in indices:
+            self.data.append(Image.fromarray(dataset.data[idx]))
+        if not isinstance(dataset.targets, np.ndarray):
+            dataset.targets = np.array(dataset.targets)
+        self.targets = dataset.targets[indices].tolist()
+        self.transform = transform
+        self.target_transform = target_transform
+
+    def __getitem__(self, index):
+        img, label = self.data[index], self.targets[index]
+
+        if self.transform is not None:
+            img = self.transform(img)
+        if self.target_transform is not None:
+            label = self.target_transform(label)
+
+        return img, label
+
+    def __len__(self):
+        return len(self.targets)

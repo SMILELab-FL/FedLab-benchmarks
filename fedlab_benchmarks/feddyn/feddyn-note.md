@@ -8,6 +8,7 @@
 
 - machine09上在跑cifar10，simpleCNN，iid-balanced的实验
 - 需要重新整理一下原论文给出的实验和参数
+- machine14上串行FedAvg很慢（14h还没跑完500 round），试图在machine13上改进`get_data_loader`，提前slice subdataset并存在serialtrainer里
 
 
 

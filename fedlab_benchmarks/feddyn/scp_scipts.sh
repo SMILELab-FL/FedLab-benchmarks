@@ -1,5 +1,5 @@
 #!/bin/bash
-# bash scp_download.sh [smilelab09] [download/upload]
+# bash scp_scripts.sh [smilelab09] [download/upload]
 # $1 is
 if [[ "$2" == "download" ]]; then
   echo "Download scripts from $1"

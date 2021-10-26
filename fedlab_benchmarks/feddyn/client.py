@@ -1,4 +1,5 @@
 import torch
+from torch.utils.data import DataLoader
 
 import os
 import numpy as np
@@ -12,6 +13,7 @@ from fedlab.utils.logger import Logger
 
 from config import local_grad_vector_file_pattern, clnt_params_file_pattern, \
     local_grad_vector_list_file_pattern, clnt_params_list_file_pattern
+from utils import Subset
 
 
 class FedDynSerialTrainer_v2(SubsetSerialTrainer):
@@ -345,8 +347,11 @@ class FedAvgSerialTrainer(SubsetSerialTrainer):
     def __init__(self, model,
                  dataset,
                  data_slices,
+                 transform=None,
+                 target_transform=None,
                  client_weights=None,
                  rank=None,
+                 standalone=False,
                  logger=Logger(),
                  cuda=True,
                  args=None):
@@ -360,6 +365,23 @@ class FedAvgSerialTrainer(SubsetSerialTrainer):
         self.client_weights = client_weights
         self.rank = rank
         self.round = 0
+        self.dataset = {cid: Subset(dataset, data_slices[cid], transform=transform,
+                                    target_transform=target_transform) for cid in
+                        range(self.client_num)}
+        self.standalone = standalone
+
+    def _get_dataloader(self, client_id):
+        batch_size = self.args["batch_size"]
+        if self.standalone:
+            num_workers = 4
+        else:
+            num_workers = 0
+        train_loader = DataLoader(self.dataset[client_id],
+                                  shuffle=True,
+                                  batch_size=batch_size,
+                                  drop_last=True,
+                                  num_workers=num_workers)
+        return train_loader
 
     def train(self, model_parameters, id_list, aggregate=False):
         param_list = []
