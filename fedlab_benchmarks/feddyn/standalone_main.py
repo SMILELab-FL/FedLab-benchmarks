@@ -142,7 +142,7 @@ if __name__ == '__main__':
 
     for r in range(alg_config['round']):
         model_params = SerializationTool.serialize_model(server_model)
-        selected_cid = random.sample(range(num_clients), num_per_round)
+        selected_cid = sorted(random.sample(range(num_clients), num_per_round))
         if args.alg == 'FedDyn':
             params_list, local_grad_vector_list = trainer.train(model_parameters=model_params,
                                                                 id_list=selected_cid,
@@ -152,7 +152,7 @@ if __name__ == '__main__':
                     len(params_list)))
 
             for idx, cid in enumerate(selected_cid):
-                clnt_params_list[cid] = params_list[idx]
+                clnt_params_list[cid] = params_list[idx].data
 
             avg_mdl_param = Aggregators.fedavg_aggregate(params_list)
             avg_local_grad = Aggregators.fedavg_aggregate(local_grad_vector_list)
@@ -181,7 +181,7 @@ if __name__ == '__main__':
             SerializationTool.deserialize_model(server_model, serialized_parameters)
 
         # server model evaluation
-        test_acc, test_loss = evaluate(server_model, nn.CrossEntropyLoss(), test_loader)
+        test_loss, test_acc = evaluate(server_model, nn.CrossEntropyLoss(), test_loader)
         test_acc_hist.append(test_acc)
         test_loss_hist.append(test_loss)
         write_file(test_acc_hist, test_loss_hist, alg_config)
