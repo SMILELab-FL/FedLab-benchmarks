@@ -113,6 +113,7 @@ if __name__ == "__main__":
         trainer = FedAvgSerialTrainer(model=model,
                                       dataset=trainset,
                                       data_slices=sub_data_indices,
+                                      transform=transform_train,
                                       client_weights=sub_client_weights,
                                       rank=args.rank,
                                       logger=trainer_logger,
