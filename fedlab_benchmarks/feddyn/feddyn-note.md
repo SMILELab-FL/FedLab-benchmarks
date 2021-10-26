@@ -17,7 +17,9 @@
 FedAvg 1000 round:
 
 - duration: 
-  - 479.87 Min (machine14 official code)
+  - machine14 official code
+    - run1: 479.87 Min 
+    - run2: 474.98 Min
   - 160.9 Min (machine14 FedLab)
 
 
@@ -26,7 +28,9 @@ FedDyn 1000 Round:
 
 - duration:
 
-  - 537.13 Min (machine14 official code)
+  - machine14 official code:
+    - run1: 537.13 Min
+    - 
 
   - 288.8 Min (machine14 FedLab with local file save)
 

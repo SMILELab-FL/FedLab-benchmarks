@@ -372,10 +372,11 @@ class FedAvgSerialTrainer(SubsetSerialTrainer):
 
     def _get_dataloader(self, client_id):
         batch_size = self.args["batch_size"]
-        if self.standalone:
-            num_workers = 4
-        else:
-            num_workers = 0
+        # if self.standalone:
+        #     num_workers = 8
+        # else:
+        #     num_workers = 0
+        num_workers = 0
         train_loader = DataLoader(self.dataset[client_id],
                                   shuffle=True,
                                   batch_size=batch_size,

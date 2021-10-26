@@ -132,6 +132,7 @@ if __name__ == '__main__':
                                       data_slices=data_indices,
                                       transform=transform_train,
                                       client_weights=weight_list,
+                                      standalone=True,
                                       rank=args.rank,
                                       logger=trainer_logger,
                                       args=alg_config)
@@ -194,7 +195,7 @@ if __name__ == '__main__':
         duration = time() - start
         duration_meter.update(duration)
         duration_per_round = duration_meter.avg
-        server_logger.info(f"Round {r+1} - Server model update DONE: {duration_meter.sum()/60:.2f} min; "
+        server_logger.info(f"Round {r+1} - Server model update DONE: {duration_meter.sum/60:.2f} min; "
                            f"{duration_per_round:.1f} sec/round; "
                            f"Estimated Rest Time: {(alg_config['round'] - r)*duration_per_round/60:.2f} min")
         start = time()
