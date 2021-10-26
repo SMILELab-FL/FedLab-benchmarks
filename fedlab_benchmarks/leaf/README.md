@@ -108,7 +108,7 @@ In order to speed up developers' reading data, fedlab provides a method of proce
 
 ```shell
 cd fedlab_benchmarks/leaf/process_data
-python create_pickle_dataset.py --data_root "../../datasets" --save_root "./pickle_dataset" --dataset_name "shakespeare"
+python create_pickle_dataset.py --data_root "../datasets" --save_root "./pickle_datasets" --dataset_name "shakespeare"
 ```
 
 Parameter Description:
