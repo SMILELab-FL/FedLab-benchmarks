@@ -20,7 +20,9 @@ FedAvg 1000 round:
   - machine14 official code
     - run1: 479.87 Min 
     - run2: 474.98 Min
-  - 160.9 Min (machine14 FedLab)
+  - machine14 FedLab
+    - Scale mode: 160.9 Min
+    - Standalone: 919 Min (dataloader的问题，太慢了)
 
 
 
