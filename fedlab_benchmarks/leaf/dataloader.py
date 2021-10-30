@@ -21,14 +21,8 @@ from torch.utils.data import ConcatDataset
 from .read_util import get_dataset_pickle, get_all_dataset_pickle
 from .nlp_utils.dataset_vocab.sample_build_vocab import get_built_vocab
 
-import sys
-
-sys.path.append("../../../../")
-from fedlab_benchmarks.leaf.dataset.femnist_dataset import FemnistDataset
-from fedlab_benchmarks.leaf.dataset.shakespeare_dataset import ShakespeareDataset
-from fedlab_benchmarks.leaf.dataset.celeba_dataset import CelebADataset
-from fedlab_benchmarks.leaf.dataset.sent140_dataset import Sent140Dataset
-
+# for pickle load
+from .dataset import FemnistDataset, ShakespeareDataset, CelebADataset, Sent140Dataset
 
 def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
     """Get dataloader with ``batch_size`` param for client with ``client_id``
@@ -46,7 +40,7 @@ def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
     """
     # get vocab and index data
 
-    pickle_root = "./process_data/pickle_dataset"
+    pickle_root = "./pickle_datasets"
     trainset = get_dataset_pickle(dataset_name=dataset, client_id=client_id, dataset_type='train', pickle_root=pickle_root)
     testset = get_dataset_pickle(dataset_name=dataset, client_id=client_id, dataset_type='test', pickle_root=pickle_root)
 
@@ -78,7 +72,7 @@ def get_LEAF_all_test_dataloader(dataset: str, batch_size=128):
     Returns:
         ConcatDataset for all clients' test dataset
     """
-    pickle_root = "./process_data/pickle_dataset"
+    pickle_root = "./pickle_datasets"
     all_testset = get_all_dataset_pickle(dataset_name=dataset, dataset_type='test', pickle_root=pickle_root)
     test_loader = torch.utils.data.DataLoader(
                     all_testset,

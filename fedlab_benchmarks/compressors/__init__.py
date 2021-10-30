@@ -12,7 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import os
-
-ROOT_DIR = os.path.join(os.path.abspath(__file__)
+from .topk import TopkCompressor
+from .qsgd import QSGDCompressor

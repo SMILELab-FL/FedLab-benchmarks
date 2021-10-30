@@ -9,7 +9,6 @@ import torchvision.transforms as transforms
 
 torch.manual_seed(0)
 
-
 from fedlab.core.client.scale.trainer import SubsetSerialTrainer
 from fedlab.core.client.scale.manager import ScaleClientPassiveManager
 from fedlab.core.network import DistNetwork
@@ -20,6 +19,7 @@ from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.functional import load_dict
 
 import sys
+
 sys.path.append("../../../")
 from models.cnn import AlexNet_CIFAR10, CNN_CIFAR10
 
@@ -37,7 +37,6 @@ if __name__ == "__main__":
     parser.add_argument("--setting", type=str)
     args = parser.parse_args()
 
-
     if args.setting == 'iid':
         config = cifar10_iid_baseline_config
     else:
@@ -52,17 +51,16 @@ if __name__ == "__main__":
         transforms.Normalize((0.4914, 0.4822, 0.4465),
                              (0.2023, 0.1994, 0.2010))
     ])
-    trainset = torchvision.datasets.CIFAR10(
-        root='../../../datasets/cifar10/',
-        train=True,
-        download=True,
-        transform=transform_train)
+    
+    trainset = torchvision.datasets.CIFAR10(root='../../../datasets/cifar10/',
+                                            train=True,
+                                            download=True,
+                                            transform=transform_train)
 
     if config['partition'] == "noniid":
         data_indices = load_dict("cifar10_noniid.pkl")
     if config['partition'] == "iid":
         data_indices = load_dict("cifar10_iid.pkl")
-
 
     # Process rank x represent client id from (x-1)*10 - (x-1)*10 +10
     # e.g. rank 5 <--> client 40-50
@@ -87,10 +85,10 @@ if __name__ == "__main__":
                           ethernet=args.ethernet)
 
     trainer = SubsetSerialTrainer(model=model,
-                            dataset=trainset,
-                            data_slices=sub_data_indices,
-                            aggregator=aggregator,
-                            args=config)
+                                  dataset=trainset,
+                                  data_slices=sub_data_indices,
+                                  aggregator=aggregator,
+                                  args=config)
 
     manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
 
