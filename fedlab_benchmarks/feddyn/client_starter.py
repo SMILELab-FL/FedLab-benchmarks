@@ -39,10 +39,10 @@ if __name__ == "__main__":
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
 
     # get basic config
-    if args.partition == 'iid':
-        alg_config = cifar10_config
-        data_config = balance_iid_data_config
-    # alg_config = debug_config
+    # if args.partition == 'iid':
+    #     alg_config = cifar10_config
+    #     data_config = balance_iid_data_config
+    alg_config = debug_config
 
     # get basic model
     model = getattr(models, alg_config['model_name'])(alg_config['model_name'])
@@ -97,18 +97,17 @@ if __name__ == "__main__":
                           rank=args.rank,
                           ethernet=args.ethernet)
 
-    # trainer_logger = Logger(f"ClientSerialTrainer-Rank-{args.rank:2d}")
     trainer_logger = Logger(f"ClientTrainer-Rank-{args.rank:02d}",
                             os.path.join(args.out_dir, f"ClientTrainer_rank_{args.rank:02d}.txt"))
     alg_config['out_dir'] = args.out_dir
     if args.alg == 'FedDyn':
         trainer = FedDynSerialTrainer_v2(model=model,
-                                      dataset=trainset,
-                                      data_slices=sub_data_indices,
-                                      client_weights=sub_client_weights,
-                                      rank=args.rank,
-                                      logger=trainer_logger,
-                                      args=alg_config)
+                                         dataset=trainset,
+                                         data_slices=sub_data_indices,
+                                         client_weights=sub_client_weights,
+                                         rank=args.rank,
+                                         logger=trainer_logger,
+                                         args=alg_config)
     elif args.alg == 'FedAvg':
         trainer = FedAvgSerialTrainer(model=model,
                                       dataset=trainset,

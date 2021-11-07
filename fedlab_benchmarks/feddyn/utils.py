@@ -10,7 +10,7 @@ sys.path.append("../../../FedLab/")
 
 from fedlab.utils.functional import AverageMeter
 
-from config import local_grad_vector_list_file_pattern
+from config import local_grad_vector_list_file_pattern, clnt_params_list_file_pattern
 
 
 def load_local_grad_vector(out_dir, rank=None):
@@ -30,6 +30,23 @@ def load_local_grad_vector(out_dir, rank=None):
             local_grad_vector_list.extend(torch.load(fn))
     assert len(local_grad_vector_list) >= 1
     return local_grad_vector_list
+
+
+def load_clnt_params(out_dir, rank=None):
+    clnt_params_list = []
+    if rank is not None:
+        pass
+    else:
+        tmp_files = os.listdir(out_dir)
+        clnt_params_list_files = sorted(fnmatch.filter(tmp_files,
+                                                       clnt_params_list_file_pattern.replace(
+                                                           '{rank:02d}', '*')))
+        for fn in clnt_params_list_files:
+            fn = os.path.join(out_dir, fn)
+            clnt_params_list.extend(torch.load(fn))
+
+    assert len(clnt_params_list) >= 1
+    return clnt_params_list
 
 
 def evaluate(model, criterion, test_loader):

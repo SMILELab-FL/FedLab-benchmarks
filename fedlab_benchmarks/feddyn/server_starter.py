@@ -17,7 +17,8 @@ from fedlab.utils.logger import Logger
 from fedlab.utils.functional import load_dict
 
 from config import cifar10_config, balance_iid_data_config, debug_config
-from server import FedDynServerHandler, FedAvgServerHandler, FedAvgServerManager
+from server import FedDynServerHandler, FedDynServerHandler_v2, FedAvgServerHandler, \
+    FedAvgServerManager
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='FL server example')
@@ -38,10 +39,10 @@ if __name__ == '__main__':
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
 
     # get basic config
-    if args.partition == 'iid':
-        alg_config = cifar10_config
-        data_config = balance_iid_data_config
-    # alg_config = debug_config
+    # if args.partition == 'iid':
+    #     alg_config = cifar10_config
+    #     data_config = balance_iid_data_config
+    alg_config = debug_config
 
     if args.partition == 'iid':
         data_indices = load_dict(os.path.join('./Output', "cifar10_iid.pkl"))
@@ -60,20 +61,10 @@ if __name__ == '__main__':
                              (0.2023, 0.1994, 0.2010))
     ])
 
-    # trainset = torchvision.datasets.CIFAR10(root=os.path.join(args.data_dir, 'CIFAR10'),
-    #                                         train=True,
-    #                                         download=False,
-    #                                         transform=transform_test)
-
     testset = torchvision.datasets.CIFAR10(root=os.path.join(args.data_dir, 'CIFAR10'),
                                            train=False,
                                            download=False,
                                            transform=transform_test)
-
-    trainloader = torch.utils.data.DataLoader(trainset,
-                                              batch_size=alg_config['test_batch_size'],
-                                              drop_last=False,
-                                              shuffle=False)
 
     testloader = torch.utils.data.DataLoader(testset,
                                              batch_size=alg_config['test_batch_size'],
@@ -81,7 +72,7 @@ if __name__ == '__main__':
                                              shuffle=False)
 
     handler_logger = Logger("ServerHandler",
-                           os.path.join(args.out_dir, "server_handler.txt"))
+                            os.path.join(args.out_dir, "server_handler.txt"))
 
     alg_config['out_dir'] = args.out_dir
 
@@ -91,13 +82,18 @@ if __name__ == '__main__':
     manager_logger = Logger("ServerManager", os.path.join(args.out_dir, "server_manager.txt"))
 
     if args.alg == 'FedDyn':
-        handler = FedDynServerHandler(global_round=alg_config["round"],
-                                      sample_ratio=alg_config["sample_ratio"],
-                                      test_loader=testloader,
-                                      train_loader=trainloader,
-                                      cuda=True,
-                                      logger=handler_logger,
-                                      args=alg_config)
+        # handler = FedDynServerHandler(global_round=alg_config["round"],
+        #                               sample_ratio=alg_config["sample_ratio"],
+        #                               test_loader=testloader,
+        #                               cuda=True,
+        #                               logger=handler_logger,
+        #                               args=alg_config)
+        handler = FedDynServerHandler_v2(global_round=alg_config["round"],
+                                         sample_ratio=alg_config["sample_ratio"],
+                                         test_loader=testloader,
+                                         cuda=True,
+                                         logger=handler_logger,
+                                         args=alg_config)
 
         manager = ScaleSynchronousManager(network=network, handler=handler, logger=manager_logger)
 

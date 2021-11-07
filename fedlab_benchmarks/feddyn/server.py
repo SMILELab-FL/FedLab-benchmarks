@@ -20,13 +20,12 @@ from fedlab.utils import SerializationTool, Aggregators, Logger
 from config import local_grad_vector_file_pattern, clnt_params_file_pattern, \
     local_grad_vector_list_file_pattern, clnt_params_list_file_pattern
 import models
-from utils import load_local_grad_vector, evaluate
+from utils import load_local_grad_vector, load_clnt_params, evaluate
 
 
 class FedDynServerHandler(SyncParameterServerHandler):
     def __init__(self,
                  test_loader,
-                 train_loader,
                  global_round=5,
                  cuda=False,
                  sample_ratio=1.0,
@@ -41,7 +40,6 @@ class FedDynServerHandler(SyncParameterServerHandler):
                          logger=logger)
 
         self.test_loader = test_loader
-        self.train_loader = train_loader
         self.cld_mdl_test_loss, self.cld_mdl_test_acc = [], []
         self.avg_mdl_test_loss, self.avg_mdl_test_acc = [], []
         self.all_mdl_test_loss, self.all_mdl_test_acc = [], []
@@ -148,13 +146,13 @@ class FedDynServerHandler(SyncParameterServerHandler):
         record.close()
 
 
-class FedDynServerHandler2(SyncParameterServerHandler):
+class FedDynServerHandler_v2(SyncParameterServerHandler):
     def __init__(self,
                  test_loader,
-                 train_loader,
                  global_round=5,
                  cuda=False,
                  sample_ratio=1.0,
+                 num_clients_per_rank=10,
                  logger=None,
                  args=None):
         # get basic model
@@ -166,7 +164,6 @@ class FedDynServerHandler2(SyncParameterServerHandler):
                          logger=logger)
 
         self.test_loader = test_loader
-        self.train_loader = train_loader
         self.cld_mdl_test_loss, self.cld_mdl_test_acc = [], []
         self.avg_mdl_test_loss, self.avg_mdl_test_acc = [], []
         self.all_mdl_test_loss, self.all_mdl_test_acc = [], []
@@ -175,10 +172,12 @@ class FedDynServerHandler2(SyncParameterServerHandler):
         num_clients = args['num_clients']
         # file params initialization
         serialized_params = SerializationTool.serialize_model(model)
-        for cid in range(num_clients):
-            clnt_params_file = os.path.join(self.args['out_dir'],
-                                            clnt_params_file_pattern.format(cid=cid))
-            torch.save(serialized_params, clnt_params_file)
+        for rank in range(1, 1 + int(num_clients / num_clients_per_rank)):
+            clnt_params_list_file = os.path.join(self.args['out_dir'],
+                                                 clnt_params_list_file_pattern.format(
+                                                     rank=rank))
+            partial_clnt_params_list = [serialized_params.data for _ in range(num_clients_per_rank)]
+            torch.save(partial_clnt_params_list, clnt_params_list_file)
 
     def _update_model(self, model_parameters_list):
         self._LOGGER.info(
@@ -186,7 +185,7 @@ class FedDynServerHandler2(SyncParameterServerHandler):
                 len(model_parameters_list)))
         # =========== update server model
         avg_mdl_param = Aggregators.fedavg_aggregate(model_parameters_list)
-        # read serialized params of all clients from local files and average them
+        # read serialized accumulated gradients of all clients from local files and average them
         local_grad_vector_list = load_local_grad_vector(self.args['out_dir'], rank=None)
         avg_local_grad = Aggregators.fedavg_aggregate(local_grad_vector_list)
 
@@ -200,12 +199,9 @@ class FedDynServerHandler2(SyncParameterServerHandler):
         SerializationTool.deserialize_model(avg_model, avg_mdl_param)
 
         all_model = getattr(models, self.args['model_name'])(self.args['model_name'])
-        clnt_params_list = []
-        for cid in range(self.client_num_in_total):
-            clnt_params_file = os.path.join(self.args['out_dir'],
-                                            clnt_params_file_pattern.format(cid=cid))
-            curr_clnt_params = torch.load(clnt_params_file)
-            clnt_params_list.append(curr_clnt_params)
+
+        # read serialized params of all clients from local files and average them
+        clnt_params_list = load_clnt_params(self.args['out_dir'], rank=None)
         all_model_params = Aggregators.fedavg_aggregate(clnt_params_list)
         SerializationTool.deserialize_model(all_model, all_model_params)
 

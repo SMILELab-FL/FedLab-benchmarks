@@ -13,7 +13,7 @@ from fedlab.utils.logger import Logger
 
 from config import local_grad_vector_file_pattern, clnt_params_file_pattern, \
     local_grad_vector_list_file_pattern, clnt_params_list_file_pattern
-from utils import Subset
+from utils import Subset, load_clnt_params
 
 
 class FedDynSerialTrainer_v2(SubsetSerialTrainer):
@@ -42,6 +42,10 @@ class FedDynSerialTrainer_v2(SubsetSerialTrainer):
                                                         local_grad_vector_list_file_pattern.format(
                                                             rank=self.rank))
         self.local_grad_vector_list = [zeros_params.data for _ in range(self.client_num)]
+        self.clnt_params_list_file = os.path.join(self.args['out_dir'],
+                                                  clnt_params_list_file_pattern.format(
+                                                      rank=self.rank))
+        self.clnt_params_list = [None for _ in range(self.client_num)]
 
     def _train_alone(self,
                      cld_mdl_params,
@@ -119,6 +123,9 @@ class FedDynSerialTrainer_v2(SubsetSerialTrainer):
         lr = orig_lr * (lr_decay_per_round ** self.round)  # using learning rate decay
         epochs = self.args['epochs']
 
+        if self.round == 0:
+            self.clnt_params_list = load_clnt_params(self.args['out_dir'], rank=self.rank)
+
         self._LOGGER.info(
             f"Round {self.round + 1}: Local training with client id list: {id_list}")
         for cid in id_list:
@@ -127,7 +134,7 @@ class FedDynSerialTrainer_v2(SubsetSerialTrainer):
 
             data_loader = self._get_dataloader(client_id=cid)
 
-            local_grad_vector = self.local_grad_vector_list[cid]
+            local_grad_vector = self.local_grad_vector_list[cid].data
             alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[cid]
 
             self._train_alone(cld_mdl_params=model_parameters,
@@ -140,21 +147,21 @@ class FedDynSerialTrainer_v2(SubsetSerialTrainer):
                               epochs=epochs)
             param_list.append(self.model_parameters)
             # save serialized params of current client into file
-            global_cid = self._local_to_global_map(cid)
-            clnt_params_file = os.path.join(self.args['out_dir'],
-                                            clnt_params_file_pattern.format(cid=global_cid))
-            torch.save(self.model_parameters, clnt_params_file)
-            self._LOGGER.info(
-                f"Round {self.round + 1}: Client {cid:3d} serialized params save to {clnt_params_file}")
+            self.clnt_params_list[cid] = self.model_parameters.data
+            # global_cid = self._local_to_global_map(cid)
+            # clnt_params_file = os.path.join(self.args['out_dir'],
+            #                                 clnt_params_file_pattern.format(cid=global_cid))
+            # torch.save(self.model_parameters, clnt_params_file)
 
             # print(f"self.local_grad_vector_list[cid].device={self.local_grad_vector_list[cid].device}")
             # print(f"self.model_parameters.device={self.model_parameters.device}")
             # print(f"model_parameters.device={model_parameters.device}")
             # update accumulated gradients for current client model
-            self.local_grad_vector_list[cid] += self.model_parameters - model_parameters
+            self.local_grad_vector_list[cid] += self.model_parameters.data - model_parameters.data
             self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} DONE")
 
         torch.save(self.local_grad_vector_list, self.local_grad_vector_list_file)
+        torch.save(self.clnt_params_list, self.clnt_params_list_file)
         self._LOGGER.info(f"Round {self.round + 1}: {self.local_grad_vector_list_file} update DONE")
 
         self.round += 1  # trainer global round counter update
