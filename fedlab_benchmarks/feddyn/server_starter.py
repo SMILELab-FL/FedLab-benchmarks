@@ -29,6 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--ethernet', type=str, default=None)
 
     parser.add_argument("--partition", type=str, default='iid', help="Choose from ['iid', 'niid']")
+    parser.add_argument("--debug", action='store_true', default=False)
     parser.add_argument("--model-name", type=str)
     parser.add_argument("--alg", type=str, default='FedDyn')
     parser.add_argument("--data-dir", type=str, default='../../../datasets')
@@ -39,15 +40,17 @@ if __name__ == '__main__':
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
 
     # get basic config
-    # if args.partition == 'iid':
-    #     alg_config = cifar10_config
-    #     data_config = balance_iid_data_config
-    alg_config = debug_config
+    if args.debug is True:
+        alg_config = debug_config
+    else:
+        if args.partition == 'iid':
+            alg_config = cifar10_config
+            data_config = balance_iid_data_config
 
     if args.partition == 'iid':
-        data_indices = load_dict(os.path.join('./Output', "cifar10_iid.pkl"))
+        data_indices = load_dict(os.path.join(args.out_dir, "cifar10_iid.pkl"))
     elif args.partition == 'noniid':
-        data_indices = load_dict(os.path.join('./Output', "cifar10_noniid.pkl"))
+        data_indices = load_dict(os.path.join(args.out_dir, "cifar10_noniid.pkl"))
     else:
         raise ValueError(f"args.partition '{args.partition}' is not supported yet")
 
