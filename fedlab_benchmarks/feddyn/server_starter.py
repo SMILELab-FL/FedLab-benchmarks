@@ -60,10 +60,10 @@ if __name__ == '__main__':
                              (0.2023, 0.1994, 0.2010))
     ])
 
-    trainset = torchvision.datasets.CIFAR10(root=os.path.join(args.data_dir, 'CIFAR10'),
-                                            train=True,
-                                            download=False,
-                                            transform=transform_test)
+    # trainset = torchvision.datasets.CIFAR10(root=os.path.join(args.data_dir, 'CIFAR10'),
+    #                                         train=True,
+    #                                         download=False,
+    #                                         transform=transform_test)
 
     testset = torchvision.datasets.CIFAR10(root=os.path.join(args.data_dir, 'CIFAR10'),
                                            train=False,

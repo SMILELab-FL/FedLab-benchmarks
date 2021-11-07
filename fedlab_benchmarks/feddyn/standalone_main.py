@@ -118,6 +118,7 @@ if __name__ == '__main__':
                            os.path.join(args.out_dir, "Server.txt"))
 
     alg_config['out_dir'] = args.out_dir
+    alg_config['alg'] = args.alg
     if args.alg == 'FedDyn':
         trainer = FedDynSerialTrainer_v2(model=client_model,
                                          dataset=trainset,
@@ -190,7 +191,6 @@ if __name__ == '__main__':
         test_loss, test_acc = evaluate(server_model, nn.CrossEntropyLoss(), test_loader)
         test_acc_hist.append(test_acc)
         test_loss_hist.append(test_loss)
-        write_file(test_acc_hist, test_loss_hist, alg_config)
 
         duration = time() - start
         duration_meter.update(duration)
@@ -199,3 +199,6 @@ if __name__ == '__main__':
                            f"{duration_per_round:.1f} sec/round; "
                            f"Estimated Rest Time: {(alg_config['round'] - r)*duration_per_round/60:.2f} min")
         start = time()
+    
+    # ===== output hist
+    write_file(test_acc_hist, test_loss_hist, alg_config)

@@ -150,7 +150,6 @@ class FedDynSerialTrainer_v2(SubsetSerialTrainer):
             # print(f"self.local_grad_vector_list[cid].device={self.local_grad_vector_list[cid].device}")
             # print(f"self.model_parameters.device={self.model_parameters.device}")
             # print(f"model_parameters.device={model_parameters.device}")
-
             # update accumulated gradients for current client model
             self.local_grad_vector_list[cid] += self.model_parameters - model_parameters
             self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} DONE")
@@ -372,10 +371,6 @@ class FedAvgSerialTrainer(SubsetSerialTrainer):
 
     def _get_dataloader(self, client_id):
         batch_size = self.args["batch_size"]
-        # if self.standalone:
-        #     num_workers = 8
-        # else:
-        #     num_workers = 0
         num_workers = 0
         train_loader = DataLoader(self.dataset[client_id],
                                   shuffle=True,

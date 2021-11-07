@@ -11,6 +11,6 @@
 
 ## ============ FedAvg ============
 SECONDS=0
-python standalone_main.py --num-clients 100 --sample-ratio 1.0 --alg FedAvg --out-dir ./Output/FedAvg/standalone
+python standalone_main.py --num-clients 100 --sample-ratio 1.0 --alg FedAvg --out-dir ./Output/FedAvg/standalone-debug
 FedAvgELAPSED="Elapsed: $(($SECONDS / 60))min $(($SECONDS % 60))sec"
 echo $FedAvgELAPSED
