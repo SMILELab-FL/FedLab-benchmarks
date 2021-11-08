@@ -18,7 +18,7 @@ from fedlab.utils.functional import save_dict, load_dict
 
 import models
 from config import cifar10_config, balance_iid_data_config, debug_config
-from client import FedDynSerialTrainer, FedDynSerialTrainer_v2, FedAvgSerialTrainer
+from client import FedDynSerialTrainer, FedAvgSerialTrainer
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FedDyn client demo in FedLab")
@@ -30,36 +30,38 @@ if __name__ == "__main__":
     parser.add_argument("--alg", type=str, default='FedDyn')
     parser.add_argument("--ethernet", type=str, default=None)
 
-    parser.add_argument("--partition", type=str, default='iid', help="Choose from ['iid', 'niid']")
+    parser.add_argument("--partition", type=str, default='iid',
+                        help="Choose from ['iid', 'niid'], 'niid' configuration is not "
+                             "specified yet")
     parser.add_argument("--debug", action='store_true', default=False)
     parser.add_argument("--data-dir", type=str, default='../../../datasets')
     parser.add_argument("--out-dir", type=str, default='./Output')
     args = parser.parse_args()
 
-    Path(args.data_dir).mkdir(parents=True, exist_ok=True)
-    Path(args.out_dir).mkdir(parents=True, exist_ok=True)
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
-    # get basic config
+    # ========== Get basic config ==========
     if args.debug is True:
         alg_config = debug_config
     else:
         if args.partition == 'iid':
             alg_config = cifar10_config
 
-    # get basic model
+    Path(args.data_dir).mkdir(parents=True, exist_ok=True)
+    Path(args.out_dir).mkdir(parents=True, exist_ok=True)
+    alg_config['out_dir'] = args.out_dir
+
+    # ========== Get basic model ==========
     model = getattr(models, alg_config['model_name'])(alg_config['model_name'])
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
-
+    # ========== Get data partition and client weight based on sample number ==========
     if args.partition == 'iid':
         data_indices = load_dict(os.path.join(args.out_dir, "cifar10_iid.pkl"))
-    elif args.partition == 'noniid':
-        data_indices = load_dict(os.path.join(args.out_dir, "cifar10_noniid.pkl"))
     else:
         raise ValueError(f"args.partition '{args.partition}' is not supported yet")
 
     # Process rank x represent client id from (x-1) * client_num_per_rank - x * client_num_per_rank
-    # e.g. rank 5 <--> client 40-50
+    # e.g. rank 5 <--> client 40-50 if client_num_per_rank=10
     client_id_list = [
         i for i in
         range((args.rank - 1) * args.client_num_per_rank, args.rank * args.client_num_per_rank)
@@ -90,10 +92,12 @@ if __name__ == "__main__":
         idx: len(data_indices[cid]) / total_sample_num
         for idx, cid in enumerate(client_id_list)
     }
+
     if 'FedDyn' in args.alg:
         sub_client_weights = {key: value * alg_config['num_clients'] for key, value in
                               sub_client_weights.items()}
 
+    # ========== Build FL simulation ==========
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,
                           rank=args.rank,
@@ -101,7 +105,7 @@ if __name__ == "__main__":
 
     trainer_logger = Logger(f"ClientTrainer-Rank-{args.rank:02d}",
                             os.path.join(args.out_dir, f"ClientTrainer_rank_{args.rank:02d}.txt"))
-    alg_config['out_dir'] = args.out_dir
+
     if args.alg == 'FedDyn':
         trainer = FedDynSerialTrainer(model=model,
                                       dataset=trainset,
@@ -111,15 +115,6 @@ if __name__ == "__main__":
                                       rank=args.rank,
                                       logger=trainer_logger,
                                       args=alg_config)
-    elif args.alg=='FedDyn_v2':
-        trainer = FedDynSerialTrainer_v2(model=model,
-                                         dataset=trainset,
-                                         data_slices=sub_data_indices,
-                                         transform=transform_train,
-                                         client_weights=sub_client_weights,
-                                         rank=args.rank,
-                                         logger=trainer_logger,
-                                         args=alg_config)
     elif args.alg == 'FedAvg':
         trainer = FedAvgSerialTrainer(model=model,
                                       dataset=trainset,

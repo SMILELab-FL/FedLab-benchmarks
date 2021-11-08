@@ -16,9 +16,8 @@ from fedlab.core.server.scale.manager import ScaleSynchronousManager
 from fedlab.utils.logger import Logger
 from fedlab.utils.functional import load_dict
 
-from config import cifar10_config, balance_iid_data_config, debug_config
-from server import FedDynServerHandler, FedDynServerHandler_v2, FedAvgServerHandler, \
-    FedAvgServerManager
+from config import cifar10_config, debug_config
+from server import FedDynServerHandler, FedAvgServerHandler, FedAvgServerManager
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='FL server example')
@@ -36,27 +35,22 @@ if __name__ == '__main__':
     parser.add_argument("--out-dir", type=str, default='./Output')
     args = parser.parse_args()
 
-    Path(args.data_dir).mkdir(parents=True, exist_ok=True)
-    Path(args.out_dir).mkdir(parents=True, exist_ok=True)
-
-    # get basic config
+    # ========== Get basic config ==========
     if args.debug is True:
         alg_config = debug_config
     else:
         if args.partition == 'iid':
             alg_config = cifar10_config
-            data_config = balance_iid_data_config
 
+    Path(args.data_dir).mkdir(parents=True, exist_ok=True)
+    Path(args.out_dir).mkdir(parents=True, exist_ok=True)
+    alg_config['out_dir'] = args.out_dir
+
+    # ========== Get data partition and client weight based on sample number ==========
     if args.partition == 'iid':
         data_indices = load_dict(os.path.join(args.out_dir, "cifar10_iid.pkl"))
-    elif args.partition == 'noniid':
-        data_indices = load_dict(os.path.join(args.out_dir, "cifar10_noniid.pkl"))
     else:
         raise ValueError(f"args.partition '{args.partition}' is not supported yet")
-
-    total_train_sample_num = sum([len(indices) for indices in data_indices.values()])
-    weight_list = {cid: len(data_indices[cid]) / total_train_sample_num for cid in
-                   range(alg_config['num_clients'])}
 
     transform_test = transforms.Compose([
         transforms.ToTensor(),
@@ -74,10 +68,9 @@ if __name__ == '__main__':
                                              drop_last=False,
                                              shuffle=False)
 
+    # ========== Build FL simulation ==========
     handler_logger = Logger("ServerHandler",
                             os.path.join(args.out_dir, "server_handler.txt"))
-
-    alg_config['out_dir'] = args.out_dir
 
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,
@@ -92,16 +85,12 @@ if __name__ == '__main__':
                                       logger=handler_logger,
                                       args=alg_config)
         manager = ScaleSynchronousManager(network=network, handler=handler, logger=manager_logger)
-    elif args.alg == 'FedDyn_v2':
-        handler = FedDynServerHandler_v2(global_round=alg_config["round"],
-                                         sample_ratio=alg_config["sample_ratio"],
-                                         test_loader=testloader,
-                                         cuda=True,
-                                         logger=handler_logger,
-                                         args=alg_config)
-        manager = ScaleSynchronousManager(network=network, handler=handler, logger=manager_logger)
 
     elif args.alg == 'FedAvg':
+        total_train_sample_num = sum([len(indices) for indices in data_indices.values()])
+        weight_list = {cid: len(data_indices[cid]) / total_train_sample_num for cid in
+                       range(alg_config['num_clients'])}
+
         handler = FedAvgServerHandler(global_round=alg_config["round"],
                                       sample_ratio=alg_config["sample_ratio"],
                                       test_loader=testloader,

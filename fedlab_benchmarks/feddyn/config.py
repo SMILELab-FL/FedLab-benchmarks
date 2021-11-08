@@ -17,12 +17,6 @@ cifar10_config = {
     'dataset': 'cifar10',
 }
 
-balance_iid_data_config = {
-    'partition': "iid",
-    'balance': True,
-    'dataset': 'cifar10',
-    'num-clients': 100,
-}
 
 debug_config = {
     'num_clients': 30,

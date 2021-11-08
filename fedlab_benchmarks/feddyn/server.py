@@ -132,8 +132,9 @@ class FedDynServerHandler(SyncParameterServerHandler):
 
     def write_file(self, acces, losses):
         args = self.args
-        record = open(os.path.join(args['out_dir'], 
-                                   "{}_{}_{}.txt".format(args['partition'], args['model_name'], args['dataset'])), 
+        record = open(os.path.join(args['out_dir'],
+                                   "{}_{}_{}.txt".format(args['partition'], args['model_name'],
+                                                         args['dataset'])),
                       "w")
 
         key_name = ['avg_mdl_test',
@@ -141,118 +142,6 @@ class FedDynServerHandler(SyncParameterServerHandler):
                     'cld_mdl_test']
 
         record.write(str(args) + "\n")
-        for key in key_name:
-            record.write(f"{key}_acc:" + str(acces[key]) + "\n")
-            record.write(f"{key}_loss:" + str(losses[key]) + "\n")
-        record.close()
-
-class FedDynServerHandler_v2(SyncParameterServerHandler):
-    def __init__(self,
-                 test_loader,
-                 global_round=5,
-                 cuda=False,
-                 sample_ratio=1.0,
-                 num_clients_per_rank=10,
-                 logger=None,
-                 args=None):
-        # get basic model
-        model = getattr(models, args['model_name'])(args['model_name'])
-        super().__init__(model,
-                         global_round=global_round,
-                         cuda=cuda,
-                         sample_ratio=sample_ratio,
-                         logger=logger)
-
-        self.test_loader = test_loader
-        self.cld_mdl_test_loss, self.cld_mdl_test_acc = [], []
-        self.avg_mdl_test_loss, self.avg_mdl_test_acc = [], []
-        self.all_mdl_test_loss, self.all_mdl_test_acc = [], []
-        self.args = args
-        self.local_param_list = []
-        num_clients = args['num_clients']
-        # file params initialization
-        serialized_params = SerializationTool.serialize_model(model)
-        for rank in range(1, 1 + int(num_clients / num_clients_per_rank)):
-            clnt_params_list_file = os.path.join(self.args['out_dir'],
-                                                 clnt_params_list_file_pattern.format(
-                                                     rank=rank))
-            partial_clnt_params_list = [serialized_params.data for _ in range(num_clients_per_rank)]
-            torch.save(partial_clnt_params_list, clnt_params_list_file)
-
-    def _update_model(self, model_parameters_list):
-        self._LOGGER.info(
-            "Model parameters aggregation, number of aggregation elements {}".format(
-                len(model_parameters_list)))
-        # =========== update server model
-        avg_mdl_param = Aggregators.fedavg_aggregate(model_parameters_list)
-        # read serialized accumulated gradients of all clients from local files and average them
-        local_grad_vector_list = load_local_grad_vector(self.args['out_dir'], rank=None)
-        avg_local_grad = Aggregators.fedavg_aggregate(local_grad_vector_list)
-
-        cld_mdl_param = avg_mdl_param + avg_local_grad
-        # load latest cloud model params into server model
-        SerializationTool.deserialize_model(self._model, cld_mdl_param)
-        self._LOGGER.info("Server model update DONE")
-
-        # =========== Evaluate model on train/test set
-        avg_model = getattr(models, self.args['model_name'])(self.args['model_name'])
-        SerializationTool.deserialize_model(avg_model, avg_mdl_param)
-
-        all_model = getattr(models, self.args['model_name'])(self.args['model_name'])
-
-        # read serialized params of all clients from local files and average them
-        clnt_params_list = load_clnt_params(self.args['out_dir'], rank=None)
-        all_model_params = Aggregators.fedavg_aggregate(clnt_params_list)
-        SerializationTool.deserialize_model(all_model, all_model_params)
-
-        # evaluate on test set
-        cld_mdl_test_loss, cld_mdl_test_acc = evaluate(self._model, torch.nn.CrossEntropyLoss(),
-                                                       self.test_loader)
-        avg_mdl_test_loss, avg_mdl_test_acc = evaluate(avg_model, torch.nn.CrossEntropyLoss(),
-                                                       self.test_loader)
-        all_mdl_test_loss, all_mdl_test_acc = evaluate(all_model, torch.nn.CrossEntropyLoss(),
-                                                       self.test_loader)
-        self.cld_mdl_test_loss.append(cld_mdl_test_loss)
-        self.cld_mdl_test_acc.append(cld_mdl_test_acc)
-        self.avg_mdl_test_loss.append(avg_mdl_test_loss)
-        self.avg_mdl_test_acc.append(avg_mdl_test_acc)
-        self.all_mdl_test_loss.append(all_mdl_test_loss)
-        self.all_mdl_test_acc.append(all_mdl_test_acc)
-        self._LOGGER.info("Server model evaluation on test set done")
-
-        # write into file
-        acces = {
-            'avg_mdl_test': self.avg_mdl_test_acc,
-            'all_mdl_test': self.all_mdl_test_acc,
-            'cld_mdl_test': self.cld_mdl_test_acc
-        }
-        losses = {
-            'avg_mdl_test': self.avg_mdl_test_loss,
-            'all_mdl_test': self.all_mdl_test_loss,
-            'cld_mdl_test': self.cld_mdl_test_loss
-        }
-        self.write_file(acces, losses)
-
-        # =========== save model to file
-        torch.save(self._model.state_dict(), os.path.join(self.args['out_dir'], "cld_model.pkl"))
-        torch.save(avg_model.state_dict(), os.path.join(self.args['out_dir'], "avg_model.pkl"))
-        torch.save(all_model.state_dict(), os.path.join(self.args['out_dir'], "all_model.pkl"))
-        self._LOGGER.info("Server model save done")
-
-        # =========== reset cache cnt
-        self.cache_cnt = 0
-        self.client_buffer_cache = []
-        self.train_flag = False
-
-    def write_file(self, acces, losses):
-        file_name = os.path.join(self.args['out_dir'],
-                                 f"{self.args['model_name']}_{self.args['partition']}_{self.args['dataset']}.txt")
-        key_name = ['avg_mdl_test',
-                    'all_mdl_test',
-                    'cld_mdl_test']
-
-        record = open(file_name, "w")
-        record.write(str(self.args) + "\n")
         for key in key_name:
             record.write(f"{key}_acc:" + str(acces[key]) + "\n")
             record.write(f"{key}_loss:" + str(losses[key]) + "\n")
