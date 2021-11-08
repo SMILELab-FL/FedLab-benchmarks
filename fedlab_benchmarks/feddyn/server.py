@@ -207,7 +207,7 @@ class FedAvgServerHandler(SyncParameterServerHandler):
 
     def write_file(self):
         file_name = os.path.join(self.args['out_dir'],
-                                 f"FedAvg_{self.args['model_name']}_{self.args['partition']}_{self.args['dataset']}.txt")
+                                 f"{self.args['model_name']}_{self.args['partition']}_{self.args['dataset']}.txt")
         record = open(file_name, "w")
 
         record.write(str(self.args) + "\n")

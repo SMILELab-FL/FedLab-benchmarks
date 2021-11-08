@@ -49,10 +49,10 @@ demo for FedDyn using FedLab in scale mode.
 
 ### One-run Result
 
-|                          | FedDyn-Paper | FedDyn-official | FedDyn-FedLab |
-| ------------------------ | :----------: | :-------------: | :-----------: |
-| Round for  $acc>81.40\%$ |      67      |       64        |      65       |
-| Round for  $acc>85.00\%$ |     198      |       185       |      195      |
+|                          | FedDyn (Paper) | FedDyn (FedDyn code) | FedDyn (FedLab) | FedAvg (FedDyn code) | FedAvg (FedLab code) |
+| ------------------------ | :------------: | :------------------: | :-------------: | :------------------: | :------------------: |
+| Round for  $acc>81.40\%$ |       67       |          64          |       65        |         491          |         423          |
+| Round for  $acc>85.00\%$ |      198       |         185          |       195       |        > 1000        |        > 1000        |
 
 <img src="./Output/CIFAR10_100_iid_plots.png" height=400>
 
@@ -61,7 +61,7 @@ demo for FedDyn using FedLab in scale mode.
 |                |     FedAvg     |     FedDyn     |
 | -------------- | :------------: | :------------: |
 | FedDyn code    |   474.98 Min   |   537.13 Min   |
-| FedLab (scale) | __160.90 Min__ | __253.17 Min__ |
+| FedLab (scale) | __143.60 Min__ | __253.17 Min__ |
 
 ### Environment
 

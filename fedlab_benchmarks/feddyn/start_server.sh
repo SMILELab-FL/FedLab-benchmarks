@@ -17,7 +17,7 @@ sleep 4s
 # python server_starter.py --world_size ${WorldSize} --partition iid --alg FedAvg --out-dir ./Output/FedAvg/run1
 
 # ELAPSED="Elapsed: $(($SECONDS / 3600))hrs $((($SECONDS / 60) % 60))min $(($SECONDS % 60))sec"
-# echo ELAPSED
+# echo $ELAPSED
 
 # ------- FedDyn
 SECONDS=0
