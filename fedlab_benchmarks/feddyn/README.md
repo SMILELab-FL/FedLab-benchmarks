@@ -54,7 +54,7 @@ demo for FedDyn using FedLab in scale mode.
 | Round for  $acc>81.40\%$ |       67       |          64          |       65        |         491          |         423          |
 | Round for  $acc>85.00\%$ |      198       |         185          |       195       |        > 1000        |        > 1000        |
 
-<img src="./Output/CIFAR10_100_iid_plots.png" height=400>
+<img src="./Output/CIFAR10_100_iid_plots.png" height=300>
 
 ### Duration
 
