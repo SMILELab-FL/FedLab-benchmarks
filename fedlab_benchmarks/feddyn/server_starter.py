@@ -85,19 +85,20 @@ if __name__ == '__main__':
     manager_logger = Logger("ServerManager", os.path.join(args.out_dir, "server_manager.txt"))
 
     if args.alg == 'FedDyn':
-        # handler = FedDynServerHandler(global_round=alg_config["round"],
-        #                               sample_ratio=alg_config["sample_ratio"],
-        #                               test_loader=testloader,
-        #                               cuda=True,
-        #                               logger=handler_logger,
-        #                               args=alg_config)
+        handler = FedDynServerHandler(global_round=alg_config["round"],
+                                      sample_ratio=alg_config["sample_ratio"],
+                                      test_loader=testloader,
+                                      cuda=True,
+                                      logger=handler_logger,
+                                      args=alg_config)
+        manager = ScaleSynchronousManager(network=network, handler=handler, logger=manager_logger)
+    elif args.alg == 'FedDyn_v2':
         handler = FedDynServerHandler_v2(global_round=alg_config["round"],
                                          sample_ratio=alg_config["sample_ratio"],
                                          test_loader=testloader,
                                          cuda=True,
                                          logger=handler_logger,
                                          args=alg_config)
-
         manager = ScaleSynchronousManager(network=network, handler=handler, logger=manager_logger)
 
     elif args.alg == 'FedAvg':

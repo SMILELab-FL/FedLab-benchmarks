@@ -91,9 +91,6 @@ class FedDynSerialTrainer_v2(SubsetSerialTrainer):
                     else:
                         local_par_list = torch.cat((local_par_list, param.reshape(-1)), 0)
 
-                # print(f"local_par_list.device={local_par_list.device}")
-                # print(f"avg_mdl_param.device={avg_mdl_param.device}")
-                # print(f"local_grad_vector.device={local_grad_vector.device}")
                 loss_algo = alpha_coef * torch.sum(
                     local_par_list * (-avg_mdl_param + local_grad_vector))
                 loss = loss_f_i + loss_algo
@@ -137,8 +134,8 @@ class FedDynSerialTrainer_v2(SubsetSerialTrainer):
             local_grad_vector = self.local_grad_vector_list[cid].data
             alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[cid]
 
-            self._train_alone(cld_mdl_params=model_parameters,
-                              avg_mdl_param=model_parameters.cuda(self.gpu),
+            self._train_alone(cld_mdl_params=model_parameters.data,
+                              avg_mdl_param=model_parameters.data.cuda(self.gpu),
                               local_grad_vector=local_grad_vector.cuda(self.gpu),
                               train_loader=data_loader,
                               client_id=cid,
@@ -148,26 +145,17 @@ class FedDynSerialTrainer_v2(SubsetSerialTrainer):
             param_list.append(self.model_parameters)
             # save serialized params of current client into file
             self.clnt_params_list[cid] = self.model_parameters.data
-            # global_cid = self._local_to_global_map(cid)
-            # clnt_params_file = os.path.join(self.args['out_dir'],
-            #                                 clnt_params_file_pattern.format(cid=global_cid))
-            # torch.save(self.model_parameters, clnt_params_file)
-
-            # print(f"self.local_grad_vector_list[cid].device={self.local_grad_vector_list[cid].device}")
-            # print(f"self.model_parameters.device={self.model_parameters.device}")
-            # print(f"model_parameters.device={model_parameters.device}")
             # update accumulated gradients for current client model
             self.local_grad_vector_list[cid] += self.model_parameters.data - model_parameters.data
             self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} DONE")
 
         torch.save(self.local_grad_vector_list, self.local_grad_vector_list_file)
         torch.save(self.clnt_params_list, self.clnt_params_list_file)
-        self._LOGGER.info(f"Round {self.round + 1}: {self.local_grad_vector_list_file} update DONE")
 
         self.round += 1  # trainer global round counter update
         self._LOGGER.info(f"Round {self.round + 1}: Serial Trainer DONE")
 
-        return param_list, self.local_grad_vector_list
+        return param_list
 
     def _local_to_global_map(self, local_client_id, client_num_per_rank=10):
         global_client_id = (self.rank - 1) * client_num_per_rank + local_client_id
@@ -178,6 +166,8 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
     def __init__(self, model,
                  dataset,
                  data_slices,
+                 transform=None,
+                 target_transform=None,
                  client_weights=None,
                  rank=None,
                  logger=Logger(),
@@ -191,8 +181,22 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                          cuda=cuda,
                          args=args)
         self.client_weights = client_weights
+        self.dataset = {cid: Subset(dataset, data_slices[cid], transform=transform,
+                                    target_transform=target_transform) for cid in
+                        range(self.client_num)}
+
         self.rank = rank
         self.round = 0  # global round, try not to use package to inform global round
+
+    def _get_dataloader(self, client_id):
+        batch_size = self.args["batch_size"]
+        num_workers = 0
+        train_loader = DataLoader(self.dataset[client_id],
+                                  shuffle=True,
+                                  batch_size=batch_size,
+                                  drop_last=True,
+                                  num_workers=num_workers)
+        return train_loader
 
     def _train_alone(self,
                      cld_mdl_params,
@@ -203,16 +207,6 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                      lr,
                      alpha_coef,
                      epochs):
-        """
-        cld_mdl_params: serialized model params of cloud model (server model)
-        train_loader:
-        client_id:
-        lr:
-        alpha_coef:
-        epochs:
-        avg_mdl_param:  model avg of selected clients from last round
-        local_grad_vector:
-        """
         weight_decay = self.args['weight_decay']
         max_norm = self.args['max_norm']
         print_freq = self.args['print_freq']
@@ -249,9 +243,6 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
                     else:
                         local_par_list = torch.cat((local_par_list, param.reshape(-1)), 0)
 
-                # print(f"local_par_list.device={local_par_list.device}")
-                # print(f"avg_mdl_param.device={avg_mdl_param.device}")
-                # print(f"local_grad_vector.device={local_grad_vector.device}")
                 loss_algo = alpha_coef * torch.sum(
                     local_par_list * (-avg_mdl_param + local_grad_vector))
                 loss = loss_f_i + loss_algo
@@ -284,7 +275,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             f"Round {self.round + 1}: Local training with client id list: {id_list}")
         for cid in id_list:
             self._LOGGER.info(
-                f"Round {self.round + 1}: Starting training procedure of client [{cid}]")
+                f"Round {self.round + 1}: Starting training procedure of client {cid}")
 
             data_loader = self._get_dataloader(client_id=cid)
             # read local grad vector from files
@@ -292,7 +283,7 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             local_grad_vector_file = os.path.join(self.args['out_dir'],
                                                   local_grad_vector_file_pattern.format(
                                                       cid=global_cid))
-            local_grad_vector = torch.load(local_grad_vector_file)
+            local_grad_vector = torch.load(local_grad_vector_file)  
             alpha_coef_adpt = self.args['alpha_coef'] / self.client_weights[cid]
 
             self._train_alone(cld_mdl_params=model_parameters,
@@ -309,17 +300,14 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
             clnt_params_file = os.path.join(self.args['out_dir'],
                                             clnt_params_file_pattern.format(cid=global_cid))
             torch.save(self.model_parameters, clnt_params_file)
-            self._LOGGER.info(
-                f"Round {self.round + 1}: Client {cid:3d} serialized params save to {clnt_params_file}")
+            # self._LOGGER.info(
+            #     f"Round {self.round + 1}: Client {cid:3d} serialized params save to {clnt_params_file}")
 
             # update local gradient vector of current client, and save to file
-            # print(f"local_grad_vector.device={local_grad_vector.device}")
-            # print(f"self.model_parameters.device={self.model_parameters.device}")
-            # print(f"model_parameters.device={model_parameters.device}")
             local_grad_vector += self.model_parameters - model_parameters
             torch.save(local_grad_vector, local_grad_vector_file)
-            self._LOGGER.info(
-                f"Round {self.round + 1}: Client {cid:3d} serialized gradients save to {local_grad_vector_file}")
+            # self._LOGGER.info(
+            #     f"Round {self.round + 1}: Client {cid:3d} serialized gradients save to {local_grad_vector_file}")
 
             self._LOGGER.info(f"Round {self.round + 1}: Client {cid:3d} DONE")
 
@@ -337,13 +325,10 @@ class FedDynSerialTrainer(SubsetSerialTrainer):
         """
         NOTE: this function can only be used for simulations where each trainer has same number of
         clients!!!
-
         Args:
             local_client_id: local client id on current client process
             client_num_per_rank: number of clients on each client process
-
         Returns:
-
         """
         global_client_id = (self.rank - 1) * client_num_per_rank + local_client_id
         return global_client_id

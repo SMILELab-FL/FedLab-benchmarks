@@ -131,20 +131,20 @@ class FedDynServerHandler(SyncParameterServerHandler):
         self.train_flag = False
 
     def write_file(self, acces, losses):
+        args = self.args
+        record = open(os.path.join(args['out_dir'], 
+                                   "{}_{}_{}.txt".format(args['partition'], args['model_name'], args['dataset'])), 
+                      "w")
 
-        file_name = os.path.join(self.args['out_dir'],
-                                 f"FedDyn_{self.args['model_name']}_{self.args['partition']}_{self.args['dataset']}.txt")
         key_name = ['avg_mdl_test',
                     'all_mdl_test',
                     'cld_mdl_test']
 
-        record = open(file_name, "w")
-        record.write(str(self.args) + "\n")
+        record.write(str(args) + "\n")
         for key in key_name:
             record.write(f"{key}_acc:" + str(acces[key]) + "\n")
             record.write(f"{key}_loss:" + str(losses[key]) + "\n")
         record.close()
-
 
 class FedDynServerHandler_v2(SyncParameterServerHandler):
     def __init__(self,
@@ -246,7 +246,7 @@ class FedDynServerHandler_v2(SyncParameterServerHandler):
 
     def write_file(self, acces, losses):
         file_name = os.path.join(self.args['out_dir'],
-                                 f"FedDyn_{self.args['model_name']}_{self.args['partition']}_{self.args['dataset']}.txt")
+                                 f"{self.args['model_name']}_{self.args['partition']}_{self.args['dataset']}.txt")
         key_name = ['avg_mdl_test',
                     'all_mdl_test',
                     'cld_mdl_test']

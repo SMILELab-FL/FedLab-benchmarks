@@ -45,7 +45,6 @@ if __name__ == "__main__":
     else:
         if args.partition == 'iid':
             alg_config = cifar10_config
-            data_config = balance_iid_data_config
 
     # get basic model
     model = getattr(models, alg_config['model_name'])(alg_config['model_name'])
@@ -91,7 +90,7 @@ if __name__ == "__main__":
         idx: len(data_indices[cid]) / total_sample_num
         for idx, cid in enumerate(client_id_list)
     }
-    if args.alg == 'FedDyn':
+    if 'FedDyn' in args.alg:
         sub_client_weights = {key: value * alg_config['num_clients'] for key, value in
                               sub_client_weights.items()}
 
@@ -104,9 +103,19 @@ if __name__ == "__main__":
                             os.path.join(args.out_dir, f"ClientTrainer_rank_{args.rank:02d}.txt"))
     alg_config['out_dir'] = args.out_dir
     if args.alg == 'FedDyn':
+        trainer = FedDynSerialTrainer(model=model,
+                                      dataset=trainset,
+                                      data_slices=sub_data_indices,
+                                      transform=transform_train,
+                                      client_weights=sub_client_weights,
+                                      rank=args.rank,
+                                      logger=trainer_logger,
+                                      args=alg_config)
+    elif args.alg=='FedDyn_v2':
         trainer = FedDynSerialTrainer_v2(model=model,
                                          dataset=trainset,
                                          data_slices=sub_data_indices,
+                                         transform=transform_train,
                                          client_weights=sub_client_weights,
                                          rank=args.rank,
                                          logger=trainer_logger,

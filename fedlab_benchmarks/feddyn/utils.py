@@ -35,7 +35,9 @@ def load_local_grad_vector(out_dir, rank=None):
 def load_clnt_params(out_dir, rank=None):
     clnt_params_list = []
     if rank is not None:
-        pass
+        # if rank is specified, read clnt_params
+        clnt_params_list = torch.load(
+            os.path.join(out_dir, clnt_params_list_file_pattern.format(rank=rank)))
     else:
         tmp_files = os.listdir(out_dir)
         clnt_params_list_files = sorted(fnmatch.filter(tmp_files,
