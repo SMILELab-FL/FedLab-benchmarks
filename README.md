@@ -21,7 +21,7 @@ Currently, following algorithms or benchrmarks are available：
 
 ## Working list
 
-- [ ] FedDyn: [Federated Learning Based on Dynamic Regularization](https://openreview.net/forum?id=B7v4QMR6Z9w)
+- [ ] PFL: [Debiasing Model Updates for Improving Personalized Federated Training](http://proceedings.mlr.press/v139/acar21a.html)
 
 ------
 
