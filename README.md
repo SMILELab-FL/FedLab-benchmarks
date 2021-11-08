@@ -7,6 +7,7 @@ Currently, following algorithms or benchrmarks are available：
 - [x] FedAvg: [Communication-Efficient Learning of Deep Networks from Decentralized Data](http://proceedings.mlr.press/v54/mcmahan17a/mcmahan17a.pdf)
 - [x] FedAsync: [Asynchronous Federated Optimization](http://arxiv.org/abs/1903.03934)
 - [x] FedProx: [Federated Optimization in Heterogeneous Networks](https://arxiv.org/abs/1812.06127)
+- [x] FedDyn: [Federated Learning based on Dynamic Regularization](https://openreview.net/pdf?id=B7v4QMR6Z9w)
 
 ## Compression Algorithms
 - [x] DGC: [Deep Gradient Compression: Reducing the Communication Bandwidth for Distributed Training](https://arxiv.org/abs/1712.01887)
@@ -20,7 +21,7 @@ Currently, following algorithms or benchrmarks are available：
 
 ## Working list
 
-- [ ] FedDyn: [Federated Learning Based on Dynamic Regularization](https://openreview.net/forum?id=B7v4QMR6Z9w)
+- [ ] PFL: [Debiasing Model Updates for Improving Personalized Federated Training](http://proceedings.mlr.press/v139/acar21a.html)
 
 ------
 
