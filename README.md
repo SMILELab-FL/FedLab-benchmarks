@@ -1,3 +1,5 @@
+<p align="center"><img src="https://github.com/SMILELab-FL/FedLab/raw/master/docs/imgs/FedLab-logo.svg?raw=True" width=600></p>
+
 # FedLab-benchmarks
 This repo contains standard FL algorithm implementations and FL benchmarks using [FedLab](https://github.com/SMILELab-FL/FedLab). 
 
