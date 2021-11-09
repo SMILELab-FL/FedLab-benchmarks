@@ -24,6 +24,8 @@ Currently, following algorithms or benchrmarks are available：
 ## Working list
 
 - [ ] PFL: [Debiasing Model Updates for Improving Personalized Federated Training](http://proceedings.mlr.press/v139/acar21a.html)
+- [ ] qFFL: [Fair Resource Allocation in Federated Learning](https://arxiv.org/abs/1905.10497)
+- [ ] FedMGDA+: [Federated Learning meets Multi-objective Optimization](https://arxiv.org/abs/2006.11489)
 
 ------
 
