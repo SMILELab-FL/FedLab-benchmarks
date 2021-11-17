@@ -83,8 +83,7 @@ class AsyncSerialTrainer(SubsetSerialTrainer):
                     reg_lambda=self.args["reg_lambda"],
                     reg_condition=0)
                 if l2_reg is not None:
-                    loss = criterion(output,
-                                     target) + l2_reg * self.args["reg_lambda"]
+                    loss = criterion(output, target) + l2_reg
                 else:
                     loss = criterion(output, target)
                 optimizer.zero_grad()
@@ -112,10 +111,12 @@ class AsyncSerialTrainer(SubsetSerialTrainer):
             else:
                 l2_reg = l2_reg + (parameter - global_parameter).norm(2)
 
-        return l2_reg * reg_lambda
-    
+        return l2_reg * reg_lambda / 2
+
+
 # python standalone.py --com_round 2000 --sample_ratio 0.05 --batch_size 100 --epochs 5 --partition iid --name test1 --lr 0.01 --alpha 0.6
 # python standalone.py --com_round 2000 --sample_ratio 0.05 --batch_size 100 --epochs 5 --partition noniid --name test2 --lr 0.01 --alpha 0.6
+
 
 def write_file(acc, loss, args, round):
     record = open("exp_" + args.partition + "_" + args.name + ".txt", "w")
@@ -126,6 +127,7 @@ def write_file(acc, loss, args, round):
     record.write(str(acc) + "\n\n")
     record.write(str(loss) + "\n\n")
     record.close()
+
 
 class AsyncAggregate:
     """aggregate asynchronously server util
