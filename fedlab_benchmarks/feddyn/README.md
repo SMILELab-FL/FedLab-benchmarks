@@ -66,7 +66,7 @@ demo for FedDyn using FedLab in scale mode.
 ### Environment
 
 - CPU: 128G Memory, 32 cores, Intel(R) Core(TM) i9-9960X CPU @ 3.10GHz, 
-- NVDIA GEFORCE RTX 2080 Ti
+- 4 * NVDIA GEFORCE RTX 2080 Ti
 
 
 
