@@ -107,16 +107,21 @@ bash ./preprocess.sh -s niid --sf 1.0 -k 5 -t sample --tf 0.6
 
 为加速用户读取数据，fedlab提供了将原始数据处理为DataSet并存储为pickle文件的方法。通过读取数据处理后的pickle文件可获得各客户端对应数据的DataSet。
 
-**设定参数并运行create_pickle_dataset.py，使用样例如下：**
+**设定参数并实例化PickleDataset对象（位于pickle_dataset.py），使用样例如下：**
 
-```shell
-python create_pickle_dataset.py --data_root "../datasets" --save_root "./pickle_datasets" --dataset_name "shakespeare"
+```python
+from .pickle_dataset import PickleDataset
+pdataset = PickleDataset(pickle_root="pickle_datasets", dataset_name="shakespeare")
+# create responding dataset in pickle file form
+pdataset.create_pickle_dataset(data_root="../datasets")
+# read saved pickle dataset file and get responding dataset
+dataset = pdataset.get_dataset_pickle(dataset_type="test", client_id="2")
 ```
 
 参数说明：
 
 1. `data_root`：存储leaf数据集的root路径，该路径包含leaf各数据集；若使用fedlab所提供的`fedlab_benchmarks/datasets/`下载leaf数据，则`data_root`可设置为该路径，示例给出了该路径的相对地址。
-2. `save_root`：存储处理后DataSet的pickle文件地址，各数据集DataSet将另存为`{save_root}/{dataset_name}/{train,test}`；示例则在当前路径下创建`pickle_datasets`文件夹存储所有的pickle dataset文件。
+2. `pickle_root`：存储处理后DataSet的pickle文件地址，各数据集DataSet将另存为`{pickle_root}/{dataset_name}/{train,test}`；示例则在当前路径下创建`pickle_datasets`文件夹存储所有的pickle dataset文件。
 3. `dataset_name`：指定要处理的leaf数据集名称，有{feminist, Shakespeare, celeba, sent140, synthetic, reddit}六种选择。
 
 ### dataloader加载数据集
