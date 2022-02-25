@@ -17,7 +17,7 @@ from fedlab.utils.serialization import SerializationTool
 from fedlab.utils.functional import evaluate
 from fedlab.utils.functional import get_best_gpu, load_dict
 
-sys.path.append("../../../")
+sys.path.append("../../")
 from models.cnn import CNN_MNIST
 
 
@@ -48,7 +48,7 @@ parser.add_argument("--partition", type=str, default='iid')
 args = parser.parse_args()
 
 # get raw dataset
-root = "../../../../../datasets/mnist/"
+root = "../../datasets/mnist/"
 trainset = torchvision.datasets.MNIST(root=root,
                                       train=True,
                                       download=True,

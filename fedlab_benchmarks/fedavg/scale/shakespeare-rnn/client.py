@@ -37,7 +37,7 @@ class RNNSTrainer(SerialTrainer):
                          client_num,
                          aggregator,
                          cuda=cuda,
-                         logger=logger)
+                         logger=Logger())
         self.args = args
 
     def _get_dataloader(self, client_id):
@@ -107,5 +107,6 @@ if __name__ == "__main__":
                               "epochs": 1
                           })
                           
-    manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
+    manager_ = ScaleClientPassiveManager(trainer=trainer, network=network, logger=Logger())
     manager_.run()
+    
