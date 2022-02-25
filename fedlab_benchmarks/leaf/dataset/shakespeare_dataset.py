@@ -44,11 +44,8 @@ class ShakespeareDataset(Dataset):
         Returns:
             all letters vocabulary list and length of vocab list
         """
-        CHAR_VOCAB = list(
-            'dhlptx@DHLPTX $(,048cgkoswCGKOSW[_#\'/37;?bfjnrvzBFJNRVZ"&*.26:\naeimquyAEIMQUY]!%)-159\r'
-        )
-        ALL_LETTERS = "".join(CHAR_VOCAB)
-        VOCAB_SIZE = len(ALL_LETTERS) + 4  # Vocabulary with OOV ID, zero for the padding, and BOS, EOS IDs.
+        ALL_LETTERS = "\n !\"&'(),-.0123456789:;>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[]abcdefghijklmnopqrstuvwxyz}"
+        VOCAB_SIZE = len(ALL_LETTERS)
         return ALL_LETTERS, VOCAB_SIZE
 
     def _process_data_target(self):

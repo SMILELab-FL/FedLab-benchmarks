@@ -18,11 +18,9 @@
 
 import torch
 from torch.utils.data import ConcatDataset
-from .read_util import get_dataset_pickle, get_all_dataset_pickle
+from .pickle_dataset import PickleDataset
 from .nlp_utils.dataset_vocab.sample_build_vocab import get_built_vocab
 
-# for pickle load
-from .dataset import FemnistDataset, ShakespeareDataset, CelebADataset, Sent140Dataset
 
 def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
     """Get dataloader with ``batch_size`` param for client with ``client_id``
@@ -40,9 +38,9 @@ def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
     """
     # get vocab and index data
 
-    pickle_root = "./pickle_datasets"
-    trainset = get_dataset_pickle(dataset_name=dataset, client_id=client_id, dataset_type='train', pickle_root=pickle_root)
-    testset = get_dataset_pickle(dataset_name=dataset, client_id=client_id, dataset_type='test', pickle_root=pickle_root)
+    pdataset = PickleDataset(pickle_root="./pickle_datasets", dataset_name=dataset)
+    trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
+    testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
 
     # get vocab and index data
     if dataset == 'sent140':
@@ -68,12 +66,13 @@ def get_LEAF_all_test_dataloader(dataset: str, batch_size=128):
 
     Args:
         dataset (str): dataset name
+        batch_size (int, optional): the number of batch size for dataloader. Defaults to 128
 
     Returns:
         ConcatDataset for all clients' test dataset
     """
-    pickle_root = "./pickle_datasets"
-    all_testset = get_all_dataset_pickle(dataset_name=dataset, dataset_type='test', pickle_root=pickle_root)
+    pdataset = PickleDataset(pickle_root="./pickle_datasets", dataset_name=dataset)
+    all_testset = pdataset.get_dataset_pickle(dataset_type="test")
     test_loader = torch.utils.data.DataLoader(
                     all_testset,
                     batch_size=batch_size,

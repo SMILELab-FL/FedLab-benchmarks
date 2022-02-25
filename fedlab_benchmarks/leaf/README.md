@@ -104,17 +104,22 @@ At present, FedLab's Leaf experiment need provided training data and test data, 
 ### pickle file stores DataSet.
 In order to speed up developers' reading data, fedlab provides a method of processing raw data into DataSet and storing it as a pickle file. The DataSet of the corresponding data of each client can be obtained by reading the pickle file after data processing.
 
-**set the parameters and run `create_pickle_dataset.py`. The usage example is as follows:**
+**Set the parameters and instantiate the PickleDataset object (located in pickle_dataset.py), the usage example is as follows:**
 
-```shell
-cd fedlab_benchmarks/leaf/process_data
-python create_pickle_dataset.py --data_root "../datasets" --save_root "./pickle_datasets" --dataset_name "shakespeare"
+```python
+from .pickle_dataset import PickleDataset
+pdataset = PickleDataset(pickle_root="pickle_datasets", dataset_name="shakespeare")
+# create responding dataset in pickle file form
+pdataset.create_pickle_dataset(data_root="../datasets")
+# read saved pickle dataset and get responding dataset
+dataset = pdataset.get_dataset_pickle(dataset_type="test", client_id="2")
 ```
 
 Parameter Description:
-1. `data_root` : the root path for storing leaf data sets, which contains all leaf data sets; If you use the `Fedlab_benchmarks/datasets/` provided by fedlab to download leaf data, 'data_root' can be set to this path, a relative address of which is shown in this example.
-2. `save_root`: directory to store the pickle file address of the processed DataSet; Each dataset DataSet will be saved in `{save_root}/{dataset_name}/{train,test}`; the example is to create a `pickle_dataset` folder under the current path to store all pickle dataset files.
-3. `dataset_name`: Specify the name of the leaf data set to be processed. There are six options {femnist, shakespeare, celeba, sent140, synthetic, reddit}.
+
+1. `data_root`: The root path for storing leaf data sets, which contains leaf data sets; if you use the `fedlab_benchmarks/datasets/` provided by fedlab to download leaf data, then `data_root` can be set to this path. The relative address of the path is out.
+2. `pickle_root`: Store the pickle file address of the processed DataSet, each dataset DataSet will be saved as `{pickle_root}/{dataset_name}/{train,test}`; the example is to create a `pickle_datasets` folder under the current path Store all pickle dataset files.
+3. `dataset_name`: Specify the name of the leaf data set to be processed. There are six options {feminist, Shakespeare, celeba, sent140, synthetic, reddit}.
 
 ### dataloader loading data set
 
