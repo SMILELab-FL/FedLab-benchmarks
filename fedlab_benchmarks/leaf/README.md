@@ -112,14 +112,22 @@ pdataset = PickleDataset(pickle_root="pickle_datasets", dataset_name="shakespear
 # create responding dataset in pickle file form
 pdataset.create_pickle_dataset(data_root="../datasets")
 # read saved pickle dataset and get responding dataset
-dataset = pdataset.get_dataset_pickle(dataset_type="test", client_id="2")
+train_dataset = pdataset.get_dataset_pickle(dataset_type="train", client_id="0")
+test_dataset = pdataset.get_dataset_pickle(dataset_type="test", client_id="2")
 ```
 
 Parameter Description:
 
 1. `data_root`: The root path for storing leaf data sets, which contains leaf data sets; if you use the `fedlab_benchmarks/datasets/` provided by fedlab to download leaf data, then `data_root` can be set to this path. The relative address of the path is out.
-2. `pickle_root`: Store the pickle file address of the processed DataSet, each dataset DataSet will be saved as `{pickle_root}/{dataset_name}/{train,test}`; the example is to create a `pickle_datasets` folder under the current path Store all pickle dataset files.
+2. `pickle_root`: Store the pickle file address of the processed DataSet, each data set _DataSet_ will be saved as `{pickle_root}/{dataset_name}/{train,test}`; the example is to create a `pickle_datasets` folder under the current path Store all pickle dataset files.
 3. `dataset_name`: Specify the name of the leaf data set to be processed. There are six options {feminist, Shakespeare, celeba, sent140, synthetic, reddit}.
+
+> Besides, you can directly run the `gen_pickle_dataset.sh` script (located in `fedlab_benchmarks/leaf`) to instantiate the corresponding PickleDataset object for the dataset and store it as a pickle file.
+```shell
+bash gen_pickle_dataset.sh "shakespeare" "../datasets" "./pickle_datasets"
+```
+And parameters 1, 2, and 3 correspond to dataset_name, data_root, and pickle_root respectively.
+
 
 ### dataloader loading data set
 
@@ -140,6 +148,43 @@ def get_femnist_shakespeare_dataset(args):
 
     return trainloader, testloader
 ```
+
+
+---
+**Supplementary instruction of the vocabulary used by the nlp dataset:**
+
+For NLP task, most of the current methods for the construction of user vocabulary are to obtain all users' training data centrally for generation, which destroys the principle and privacy of non-availability of original data and privacy of federated learning.
+
+Currently, FedLab uses a way to saple some clients and use their data to build vocabulary for the NLP tasks that needs a user-built vocabulary, which is a simple and not private strictly method, but it can maintain the unavailability of federated user data to a certain extent than centrally use all clients' data.
+At present, our team has been researching this problem in the federated NLP.
+
+**For nlp tasks that need to build a vocabulary, you need to run `build_vocab.sh` to generate vocab (located in `fedlab_benchmarks/leaf/nlp_utils`) before instantiating the `PickleDataset` object. The script usage example is as follows:**
+```shell
+cd fedlab_benchmarks/leaf/nlp_utils
+bash build_vocab.sh "../../datasets" "shakespeare" 0.25 30000 "./dataset_vocab"
+```
+Parameter Description:
+1. Parameter 1: data_root, represents the root directory of the user's original data storage, the default in FedLab framework is 'fedlab_benchmarks/datasets', which stores the original data of various datasets
+2. Parameter 2: dataset, represents the name of the dataset corresponding to the nlp task.
+3. Parameter 3: data_select_ratio, represents the proportion of sampling clients participating in vocabulary building
+4. Parameter 4: vocab_limit_size, represents the maximum amount of the vocabulary, which limits the size of the vocabulary
+5. Parameter 5: save_root, represents the directory location where the built vocabulary is stored. If you need to use the built vocabulary, you should call `get_built_vocab(save_root,dataset)` (located in fedlab_benchmarks/leaf/nlp_utils/sample_build_vocab.py) to provide the path to obtain
+
+After that, when the dataset interface of leaf is called (dataloader.py), the corresponding vocab will be obtained and passed to the PickleDataset instantiation object of the corresponding dataset for vocabulary processing.
+The relevant example is given below (located in fedlab_benchmarks/leaf/dataloader.py) :
+
+```python
+pdataset = PickleDataset(pickle_root="./pickle_datasets", dataset_name=dataset)
+trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
+testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
+
+# get vocab and index data
+if dataset == 'sent140':
+    vocab = get_built_vocab(dataset)
+    trainset.token2seq(vocab, maxlen=300)
+    testset.token2seq(vocab, maxlen=300)
+```
+
 
 ### Run experiment
 

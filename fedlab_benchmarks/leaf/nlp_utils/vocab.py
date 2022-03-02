@@ -10,7 +10,7 @@ import numpy as np
 class Vocab:
 
     def __init__(self, origin_data_tokens, word_dim: int = 300, vocab_limit_size=80000,
-                 is_using_pretrained=True, word_vec_file_path='./glove.6B.300d.txt'):
+                 is_using_pretrained=True, word_vec_file_path='./glove/glove.6B.300d.txt'):
         self.file_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), word_vec_file_path)
         self.word_dim = word_dim
         self.word2idx = {}

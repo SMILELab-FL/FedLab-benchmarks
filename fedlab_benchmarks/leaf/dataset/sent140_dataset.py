@@ -1,12 +1,13 @@
-"""
-    This is modified by [RSE-Adversarial-Defense-Github]
-    https://github.com/Raibows/RSE-Adversarial-Defense/tree/de7bb5afc94d3d262cf0b08f55952800161865ce
-"""
 
-import os
+import sys
 import torch
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+sys.path.append(str(BASE_DIR))
+
 from torch.utils.data import Dataset
-from ..nlp_utils.tokenizer import Tokenizer
+from leaf.nlp_utils.tokenizer import Tokenizer
 
 
 class Sent140Dataset(Dataset):

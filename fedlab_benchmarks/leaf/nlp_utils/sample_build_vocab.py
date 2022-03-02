@@ -12,17 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import math
 import random
 import pickle
 import argparse
 import sys
 from pathlib import Path
+import logging
 
-from ...read_util import get_data_json
-from ...nlp_utils.tokenizer import Tokenizer
-from ...nlp_utils.vocab import Vocab
+BASE_DIR = Path(__file__).resolve().parents[2]
+sys.path.append(str(BASE_DIR))
+
+from leaf.pickle_dataset import PickleDataset
+from leaf.nlp_utils.tokenizer import Tokenizer
+from leaf.nlp_utils.vocab import Vocab
+
+logging.getLogger().setLevel(logging.INFO)
 
 
 class DataSample:
@@ -46,9 +51,8 @@ class DataSample:
             self.data2token()
 
     def choose_client_data(self):
-        client_id_name_dict, client_groups, client_name_data_dict = get_data_json(data_root=self.data_root,
-                                                                                  dataset_name=self.dataset,
-                                                                                  dataset_type="train")
+        p_dataset = PickleDataset(dataset_name=self.dataset)
+        client_id_name_dict, client_groups, client_name_data_dict = p_dataset.get_data_json(dataset_type="train")
 
         client_num = len(client_id_name_dict)
         random.seed(0)
@@ -73,7 +77,7 @@ class DataSample:
         return raw_x
 
 
-def build_vocab(data_root: str, dataset: str, data_select_ratio: float, vocab_limit_size: int, save_root: str):
+def build_vocab(data_root: str, dataset: str, data_select_ratio: float, vocab_limit_size: int, save_root: str = None):
     """Build vocab for dataset with random selected client
 
     Args:
@@ -81,52 +85,61 @@ def build_vocab(data_root: str, dataset: str, data_select_ratio: float, vocab_li
         dataset (str): string of dataset name to build vocab
         data_select_ratio (float): random select clients ratio
         vocab_limit_size (int): limit max number of vocab size
-        save_root (str): string of path to save built vocab
+        save_root (str): string of path to save built vocab, default to None,
+                         which will be modified to Path(__file__).parent / "dataset_vocab"
     Returns:
         save vocab.pck for dataset
     """
-    save_root = Path(save_root)
+    save_root = Path(save_root) if save_root is not None else Path(__file__).parent / "dataset_vocab"
     save_root.mkdir(parents=True, exist_ok=True)
-    save_file_path = save_root / f"{dataset}_vocab.pickle"
+    save_file_path = save_root / f"{dataset}_vocab.pkl"
     if save_file_path.exists():
-        print('There has been a built vocab file for {} dataset in {}, '
-              'please delete it before re-building'.format(dataset, Path))
+        logging.critical(f'There has been a built vocab file {dataset}_vocab.pkl for {dataset} '
+                         f'dataset in {save_file_path.resolve()}, please delete it before re-building')
         return
 
     data_sample = DataSample(dataset=dataset, data_root=data_root, select_ratio=data_select_ratio)
     vocab = Vocab(origin_data_tokens=data_sample.data_token, vocab_limit_size=vocab_limit_size)
     with open(save_file_path, "wb") as save_file:
         pickle.dump(vocab, save_file)
-    print('sample data to build vocab for {} dataset is completed!'.format(dataset))
+    logging.info(f'sample data to build vocab for {dataset} dataset is completed in '
+                 f'{save_file_path.resolve()} succefully!')
 
 
-def get_built_vocab(dataset: str) -> Vocab:
+def get_built_vocab(dataset: str, save_root: str = None) -> Vocab:
     """load vocab file for `dataset` to get Vocab based on selected client and data in current directory
 
     Args:
         dataset (str): string of dataset name to get vocab
+        save_root (str): string of vocab saving root path, which corresponds to the save_root param in `build_vocab()`
+                         Default to None, which will be modified to Path(__file__).parent / "dataset_vocab"
+
     Returns:
         if there is no built vocab file for `dataset`, return None, else return Vocab
     """
-    vocab_file_path = Path(__file__).parent.resolve() / f'{dataset}_vocab.pickle'
+    save_root = Path(save_root) if save_root is not None else Path(__file__).parent / "dataset_vocab"
+    vocab_file_path = save_root / f'{dataset}_vocab.pkl'
+    print(vocab_file_path.resolve())
     if not vocab_file_path.exists():
-        print('There is no built vocab file for {} dataset, please run `main` or `build_vocab.sh` to build it firstly.'
-              .format(dataset))
-        return None
+        logging.error(f"""
+                        No built vocab file {dataset}_vocab.pkl for {dataset} dataset in {save_root.resolve()}!
+                        Please run `{BASE_DIR/"leaf/nlp_utils/build_vocab.sh"}` to generate it firstly!
+                       """)
     vocab_file = open(vocab_file_path, 'rb')  # get vocab based on sample data
     vocab = pickle.load(vocab_file)
     return vocab
 
 
+# provide a method to sample some clients' train data to generate vocab in nlp application.
 # Example: python sample_build_vocab.py --dataset "sent140" --data_select_ratio 0.25 --vocab_limit_size 30000
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Sample data to build nlp vocab')
-    parser.add_argument("--data_root", type=str, default='../../../datasets/data')
-    parser.add_argument("--dataset", type=str, default='sent140')
+    parser.add_argument("--data_root", type=str, default='../../datasets')
+    parser.add_argument("--dataset", type=str, default='shakespeare')
     parser.add_argument("--data_select_ratio", type=float, default=0.25)
     parser.add_argument("--vocab_limit_size", type=int, default=30000)
-    parser.add_argument("--save_root", type=str, default='./')
+    parser.add_argument("--save_root", type=str, default=None)
     args = parser.parse_args()
 
-    build_vocab(data_root=Path(args.data_root), dataset=args.dataset, data_select_ratio=args.data_select_ratio,
+    build_vocab(data_root=args.data_root, dataset=args.dataset, data_select_ratio=args.data_select_ratio,
                 vocab_limit_size=args.vocab_limit_size, save_root=args.save_root)
