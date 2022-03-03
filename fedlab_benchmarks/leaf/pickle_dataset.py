@@ -13,35 +13,51 @@
 # limitations under the License.
 
 import json
+import argparse
+import logging
 import pickle
 from pathlib import Path
 from typing import Any, Dict, List
 from torchvision import transforms
 from torch.utils.data.dataset import ConcatDataset
 
-import os
 import sys
 
-path = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(path)
-from dataset import FemnistDataset, ShakespeareDataset, CelebADataset  # , Sent140Dataset
+BASE_DIR = Path(__file__).resolve().parents[1]
+sys.path.append(str(BASE_DIR))
+
+from leaf.dataset.femnist_dataset import FemnistDataset
+from leaf.dataset.shakespeare_dataset import ShakespeareDataset
+from leaf.dataset.celeba_dataset import CelebADataset
+from leaf.dataset.sent140_dataset import Sent140Dataset
+
+logging.getLogger().setLevel(logging.INFO)
 
 
 class PickleDataset:
     """Splits LEAF generated datasets and creates individual client partitions."""
 
-    def __init__(self, pickle_root: str, dataset_name: str):
-        self.pickle_root = Path(pickle_root)
+    def __init__(self, dataset_name: str, data_root: str = None, pickle_root: str = None):
+        """
+        Args:
+            dataset_name (str): name for dataset of PickleDataset Object
+            data_root (str): path for data saving root.
+                             Default to None and will be modified to the datasets folder in FedLab: "fedlab-benchmarks/datasets"
+            pickle_root (str): path for pickle dataset file saving root.
+                             Default to None and will be modified to Path(__file__).parent / "pickle_datasets"
+        """
         self.dataset_name = dataset_name
+        self.data_root = Path(data_root) if data_root is not None else BASE_DIR / "datasets"
+        self.pickle_root = Path(pickle_root) if pickle_root is not None else Path(__file__).parent / "pickle_datasets"
 
-    def create_pickle_dataset(self, data_root):
+    def create_pickle_dataset(self):
         # for train file data
-        train_path = Path(data_root) / self.dataset_name / "data/train"
+        train_path = self.data_root / self.dataset_name / "data/train"
         original_train_datasets = sorted(list(train_path.glob("**/*.json")))
         self._read_process_json_data(dataset_type="train", paths_to_json=original_train_datasets)
 
         # for test file data
-        test_path = Path(data_root) / self.dataset_name / "data/test"
+        test_path = self.data_root / self.dataset_name / "data/test"
         original_test_datasets = sorted(list(test_path.glob("**/*.json")))
         self._read_process_json_data(dataset_type="test", paths_to_json=original_test_datasets)
 
@@ -56,16 +72,15 @@ class PickleDataset:
         Returns:
             if there is no pickle file for `dataset`, throw FileNotFoundError, else return responding dataset
         """
-        pickle_root = Path(__file__).parent.resolve() / self.pickle_root
         # check whether to get all datasets
         if client_id is None:
-            pickle_files_path = pickle_root / self.dataset_name / dataset_type
+            pickle_files_path = self.pickle_root / self.dataset_name / dataset_type
             dataset_list = []
             for file in list(pickle_files_path.glob("**/*.pkl")):
                 dataset_list.append(pickle.load(open(file, 'rb')))
             dataset = ConcatDataset(dataset_list)
         else:
-            pickle_file = pickle_root / self.dataset_name / dataset_type / f"{dataset_type}_{client_id}.pkl"
+            pickle_file = self.pickle_root / self.dataset_name / dataset_type / f"{dataset_type}_{client_id}.pkl"
             dataset = pickle.load(open(pickle_file, 'rb'))
         return dataset
 
@@ -78,11 +93,13 @@ class PickleDataset:
         user_count = 0
         # Check whether leaf data has been downloaded
         if len(paths_to_json) == 0:
-            print("there is no leaf json file for {} {} data, please run leaf in `fedlab_benchmarks/datasets` firstly"
-                  .format(self.dataset_name, dataset_type))
+            logging.error(f"""
+                            No leaf json file for {self.dataset_name} {dataset_type} data!
+                            Please run leaf in `{BASE_DIR / 'datasets'}` to download origin data firstly! 
+                            """)
             return
 
-        print("processing {} {} data to dataset in pickle file".format(self.dataset_name, dataset_type))
+        logging.info(f"processing {self.dataset_name} {dataset_type} data to dataset in pickle file")
 
         for path_to_json in paths_to_json:
             with open(path_to_json, "r") as json_file:
@@ -92,8 +109,11 @@ class PickleDataset:
                 for user_idx, user_str in enumerate(users_list):
                     self._process_user(json_file, user_count + user_idx, user_str, dataset_type)
             user_count += num_users
-        print("complete processing {} {} data to dataset in pickle file! "
-              "all users number is {}".format(self.dataset_name, dataset_type, user_count))
+        logging.info(f"""
+                    Complete processing {self.dataset_name} {dataset_type} data to dataset in pickle file! 
+                    Located in {(self.pickle_root / self.dataset_name / dataset_type).resolve()}. 
+                    All users number is {user_count}.
+                    """)
 
     def _process_user(self, json_file: Dict[str, Any], user_idx: str, user_str: str, dataset_type: str):
         """Creates and saves partition for user
@@ -130,11 +150,11 @@ class PickleDataset:
                                     targets=label,
                                     image_root="../datasets/celeba/data/raw/img_align_celeba",
                                     transform=image_transform)
-        # elif dataset_name == "sent140":
-        #     dataset = Sent140Dataset(client_id=user_idx,
-        #                              client_str=user_str,
-        #                              data=data,
-        #                              targets=label)
+        elif self.dataset_name == "sent140":
+            dataset = Sent140Dataset(client_id=user_idx,
+                                     client_str=user_str,
+                                     data=data,
+                                     targets=label)
 
         else:
             raise ValueError("Invalid dataset:", self.dataset_name)
@@ -145,13 +165,12 @@ class PickleDataset:
         with open(save_dir / f"{dataset_type}_{str(user_idx)}.pkl", "wb") as save_file:
             pickle.dump(dataset, save_file)
 
-    def _get_data_json(self, data_root: str, dataset_type: str):
+    def get_data_json(self, dataset_type: str):
         """ Read .json file from ``data_dir``
         This is modified by [LEAF/models/utils/model_utils.py]
         https://github.com/TalwalkarLab/leaf/blob/master/models/utils/model_utils.py
 
         Args:
-            data_root (str): path for data saving root
             dataset_type (str): Dataset type {train, test}
         Returns:
             clients name dict mapping keys to id, groups list for each clients, a dict data mapping keys to client
@@ -159,7 +178,7 @@ class PickleDataset:
         groups = []
         client_name2data = dict()
 
-        data_dir = Path(data_root) / self.dataset_name / "data" / dataset_type
+        data_dir = self.data_root / self.dataset_name / "data" / dataset_type
         files = list(data_dir.glob("**/*.json"))
         for f in files:
             with open(f, 'r') as inf:
@@ -177,6 +196,11 @@ class PickleDataset:
 
 
 if __name__ == '__main__':
-    pdataset = PickleDataset(pickle_root="pickle_datasets", dataset_name="shakespeare")
-    # pdataset.create_pickle_dataset(data_root="../datasets")
-    dataset = pdataset.get_dataset_pickle(dataset_type="test", client_id="2")
+    parser = argparse.ArgumentParser(description='Sample data to build nlp vocab')
+    parser.add_argument("--dataset", type=str, default='sent140')
+    parser.add_argument("--data_root", type=str, default="../datasets")
+    parser.add_argument("--pickle_root", type=str, default='./pickle_datasets')
+    args = parser.parse_args()
+
+    pdataset = PickleDataset(dataset_name=args.dataset, data_root=args.data_root, pickle_root=args.pickle_root)
+    pdataset.create_pickle_dataset()

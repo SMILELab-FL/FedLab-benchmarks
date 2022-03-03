@@ -110,12 +110,13 @@ bash ./preprocess.sh -s niid --sf 1.0 -k 5 -t sample --tf 0.6
 **设定参数并实例化PickleDataset对象（位于pickle_dataset.py），使用样例如下：**
 
 ```python
-from .pickle_dataset import PickleDataset
+from leaf.pickle_dataset import PickleDataset
 pdataset = PickleDataset(pickle_root="pickle_datasets", dataset_name="shakespeare")
 # create responding dataset in pickle file form
 pdataset.create_pickle_dataset(data_root="../datasets")
 # read saved pickle dataset file and get responding dataset
-dataset = pdataset.get_dataset_pickle(dataset_type="test", client_id="2")
+train_dataset = pdataset.get_dataset_pickle(dataset_type="train", client_id="0")
+test_dataset = pdataset.get_dataset_pickle(dataset_type="test", client_id="2")
 ```
 
 参数说明：
@@ -123,6 +124,13 @@ dataset = pdataset.get_dataset_pickle(dataset_type="test", client_id="2")
 1. `data_root`：存储leaf数据集的root路径，该路径包含leaf各数据集；若使用fedlab所提供的`fedlab_benchmarks/datasets/`下载leaf数据，则`data_root`可设置为该路径，示例给出了该路径的相对地址。
 2. `pickle_root`：存储处理后DataSet的pickle文件地址，各数据集DataSet将另存为`{pickle_root}/{dataset_name}/{train,test}`；示例则在当前路径下创建`pickle_datasets`文件夹存储所有的pickle dataset文件。
 3. `dataset_name`：指定要处理的leaf数据集名称，有{feminist, Shakespeare, celeba, sent140, synthetic, reddit}六种选择。
+
+> 此外，可直接运行`gen_pickle_dataset.sh`脚本（位于`fedlab_benchmarks/leaf`）实现数据集实例化相应的PickleDataset对象并存储为pickle文件形式。
+```shell
+bash gen_pickle_dataset.sh "shakespeare" "../datasets" "./pickle_datasets"
+```
+其中参数1、2、3分别对应于上述的dataset_name、data_root、pickle_root。
+
 
 ### dataloader加载数据集
 
@@ -142,6 +150,39 @@ def get_femnist_shakespeare_dataset(args):
         raise ValueError("Invalid dataset:", args.dataset)
 
     return trainloader, testloader
+```
+
+---
+**nlp数据集使用的词表补充说明：**
+
+对nlp任务而言，当前大多数方法用户词表的构建采用的是集中获取所有用户训练数据进行生成，破坏了联邦学习的原始数据不可得的原则和隐私性。
+
+目前FedLab中对于需要构建词表的nlp任务采用的是抽样部分客户端，用这些客户端数据进行词表构建，是一种简单但能一定程度维持联邦用户数据不可得特性的方法。目前本团队已在对联邦nlp中该问题进行研究。
+
+**对于需要构建词表的nlp任务，在使用所存储的PickleDataset对象之前需要先运行`build_vocab.sh`生成vocab便于后续处理（位于`fedlab_benchmarks/leaf/nlp_utils`），脚本使用样例如下：**
+```shell
+cd fedlab_benchmarks/leaf/nlp_utils
+bash build_vocab.sh "../../datasets" "shakespeare" 0.25 30000 "./dataset_vocab"
+```
+
+参数说明：
+1. 参数1: data_root, 表示用户原始数据存储的根目录，本框架中默认采用的是'fedlab_benchmarks/datasets'存储各类数据集的原始数据
+2. 参数2：dataset，表示nlp任务对应的数据集名称
+3. 参数3：data_select_ratio，表示抽样客户端参与词表构建的比例
+4. 参数4：vocab_limit_size，表示词表的最大数量额度，限制词表大小
+5. 参数5：save_root，表示所构建词表存储的目录位置，如需使用所构建的词表，应调用`get_built_vocab(save_root,dataset)`（位于fedlab_benchmarks/leaf/nlp_utils/sample_build_vocab.py）提供该路径获取
+
+之后**将在leaf的数据集接口（dataloader.py）被调用时获取相应的vocab传递给对应数据集的PickleDataset实例化对象进行词表处理**，以下给出相关示例（位于fedlab_benchmarks/leaf/dataloader.py）：
+```python
+pdataset = PickleDataset(pickle_root="./pickle_datasets", dataset_name=dataset)
+trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
+testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
+
+# get vocab and index data
+if dataset == 'sent140':
+    vocab = get_built_vocab(dataset)
+    trainset.token2seq(vocab, maxlen=300)
+    testset.token2seq(vocab, maxlen=300)
 ```
 
 ### 运行实验
