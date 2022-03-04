@@ -5,12 +5,12 @@ import torch
 import argparse
 import os
 
+from client import FedProxTrainer
 from torch import nn, optim
 from fedlab.core.client.manager import ClientPassiveManager
 from fedlab.core.client.trainer import ClientSGDTrainer
 from fedlab.core.network import DistNetwork
 from fedlab.utils.logger import Logger
-from ..client import FedProxTrainer
 from setting import get_model, get_dataset
 
 if __name__ == "__main__":
