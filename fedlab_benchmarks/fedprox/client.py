@@ -1,10 +1,11 @@
-import tqdm
 import torch
 from copy import deepcopy
 
 from fedlab.core.client import ClientSGDTrainer
 from fedlab.utils.serialization import SerializationTool
 from fedlab.utils import Logger
+from tqdm import tqdm
+
 
 class FedProxTrainer(ClientSGDTrainer):
     """FedProxTrainer. 
@@ -21,11 +22,24 @@ class FedProxTrainer(ClientSGDTrainer):
         logger (Logger, optional): :object of :class:`Logger`.
         mu (float): hyper-parameter of FedProx.
     """
-    def __init__(self, model, data_loader, epochs, optimizer, criterion, cuda=True, logger=Logger(), mu):
-        super().__init__(model, data_loader, epochs, optimizer, criterion, cuda=cuda, logger=logger)
+
+    def __init__(
+        self,
+        model,
+        data_loader,
+        epochs,
+        optimizer,
+        criterion,
+        mu,
+        cuda=True,
+        logger=Logger(),
+    ):
+        super().__init__(
+            model, data_loader, epochs, optimizer, criterion, cuda=cuda, logger=logger
+        )
 
         self.mu = mu
-    
+
     def train(self, model_parameters):
         """Client trains its local model on local dataset.
 
@@ -35,23 +49,22 @@ class FedProxTrainer(ClientSGDTrainer):
         frz_model = deepcopy(self._model)
         SerializationTool.deserialize_model(frz_model, model_parameters)
         SerializationTool.deserialize_model(
-            self._model, model_parameters)  # load parameters
+            self._model, model_parameters
+        )  # load parameters
         self._LOGGER.info("Local train procedure is running")
         for ep in range(self.epochs):
             self._model.train()
-            for inputs, labels in tqdm(self._data_loader,
-                                       desc="{}, Epoch {}".format(
-                                           self._LOGGER.name, ep)):
+            for inputs, labels in tqdm(
+                self._data_loader, desc="{}, Epoch {}".format(self._LOGGER.name, ep)
+            ):
                 if self.cuda:
-                    inputs, labels = inputs.cuda(self.gpu), labels.cuda(
-                        self.gpu)
+                    inputs, labels = inputs.cuda(self.gpu), labels.cuda(self.gpu)
 
                 outputs = self._model(inputs)
                 l1 = self.criterion(outputs, labels)
                 l2 = 0.0
 
-                for w0, w in zip(frz_model.parameters(),
-                                 self._model.parameters()):
+                for w0, w in zip(frz_model.parameters(), self._model.parameters()):
                     l2 += torch.sum(torch.pow(w - w0, 2))
 
                 loss = l1 + 0.5 * self.mu * l2
