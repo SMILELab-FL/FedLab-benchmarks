@@ -27,14 +27,17 @@ if __name__ == "__main__":
 
     model = get_model(args)
     LOGGER = Logger(log_name="server")
-    handler = SyncParameterServerHandler(
-        model, global_round=args.round, logger=LOGGER, sample_ratio=args.sample
-    )
+    handler = SyncParameterServerHandler(model,
+                                         global_round=args.round,
+                                         logger=LOGGER,
+                                         sample_ratio=args.sample)
     network = DistNetwork(
         address=(args.ip, args.port),
         world_size=args.world_size,
         rank=0,
         ethernet=args.ethernet,
     )
-    manager_ = ServerSynchronousManager(handler=handler, network=network, logger=LOGGER)
+    manager_ = ServerSynchronousManager(handler=handler,
+                                        network=network,
+                                        logger=LOGGER)
     manager_.run()

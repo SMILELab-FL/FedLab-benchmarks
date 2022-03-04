@@ -1,6 +1,5 @@
-from sys import path
-
-path.append("../")
+import sys
+sys.path.append("../../")
 
 import argparse
 from models.cnn import CNN_CIFAR10, CNN_FEMNIST, CNN_MNIST

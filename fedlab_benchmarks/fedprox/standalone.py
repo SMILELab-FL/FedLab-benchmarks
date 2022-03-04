@@ -1,28 +1,27 @@
 # python standalone.py --sample_ratio 0.1 --batch_size 10 --epochs 5 --partition iid
 
-from sys import path
-
-path.append("../")
-path.append("../../")
+import sys
 
 import argparse
 import os
 import torch
 import random
+from copy import deepcopy
+import numpy as np
+
+from torch import nn, optim
+from torch.utils.data import DataLoader
+from torchvision import transforms, datasets
+
 from fedlab.utils.aggregator import Aggregators
 from fedlab.utils.serialization import SerializationTool
 from fedlab.utils.functional import evaluate
 from fedlab.utils.functional import get_best_gpu
-from torch import nn, optim
-from torch.utils.data import DataLoader
-from models.cnn import CNN_MNIST
-from client import FedProxTrainer
-from setting import *
-from torchvision import transforms, datasets
 from fedlab.utils.dataset.sampler import SubsetSampler
 from fedlab.utils.dataset.slicing import noniid_slicing, random_slicing
-from copy import deepcopy
-import numpy as np
+
+from models.cnn import CNN_MNIST
+from fedprox_trainer import FedProxTrainer
 
 parser = argparse.ArgumentParser(description="Standalone training example")
 parser.add_argument("--total_client", type=int, default=100)
