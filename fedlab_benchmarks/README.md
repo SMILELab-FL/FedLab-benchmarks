@@ -6,19 +6,19 @@ More implementation of algorithms will be provided in the future.
 Read this in another language: [简体中文](./README_zh-cn.md).
 ## FedAvg
 
-FedAvg is the baseline of synchronous federated learning algorithm, and FedLab implements the algorithm flow of FedAvg, including standalone and Cross Machine scenarios.
+FedAvg is the baseline of synchronous federated learning algorithm, and FedLab implements the algorithm flow of FedAvg, including standalone and Cross Process scenarios.
 
 ### Standalone
 
-The` SerialTrainer` module is responsible for the simulation of single machine and single process, and its source code can be found in `fedlab/core fedlab/core/client/trainer.py`.
+The` SerialTrainer` module is for the FL system simulation on a single machine, and its source code can be found in `fedlab/core fedlab/core/client/trainer.py`.
 
 Executable scripts is in ` fedlab_benchmarks/algorithm/fedavg/standalone/`.
 
-### Cross Machine
+### Cross Process
 
-The federated simulation of **multi-machine multi-process** and **single-machine multi-process** scenarios is the core module of FedLab, which is composed of various modules in `core/client` and `core/server`, please refer to overview for details .
+The federated simulation of **multi-machine** and **single-machine multi-process** scenarios is the core module of FedLab, which is composed of various modules in `core/client` and `core/server`, please refer to overview for details .
 
-The executable script is in `fedlab_benchmarks/algorithm/fedavg/cross_machine/`
+The executable script is in `fedlab_benchmarks/algorithm/fedavg/cross_process/`
 
 ## Leaf
 
@@ -123,6 +123,6 @@ Leaf datasets are loaded by `dataloader.py` (located under fedlab_benchmarks/dat
 ### Run experiment
 
 
-At present, the experiment of LEAF dataset is in **single-machine multi-process** scenario under FedAvg's Cross Machine, and the tests of femnist and Shakespeare datasets have been completed.
+At present, the experiment of LEAF dataset is in **single-machine multi-process** scenario under FedAvg's Cross Process, and the tests of femnist and Shakespeare datasets have been completed.
 
-The executable script is located in `fedlab_benchmarks/fedavg/cross_machine/run_leaf_test.sh`, which contains a small-scale simulation of the LEAF data set client. According to dataset name and the total number of processes provided, the corresponding server processes and the remaining client processes are created and experimented.
+The executable script is located in `fedlab_benchmarks/fedavg/cross_process/run_leaf_test.sh`, which contains a small-scale simulation of the LEAF data set client. According to dataset name and the total number of processes provided, the corresponding server processes and the remaining client processes are created and experimented.
