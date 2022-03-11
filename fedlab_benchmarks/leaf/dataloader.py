@@ -18,8 +18,8 @@
 
 import torch
 from torch.utils.data import ConcatDataset
-from .read_util import get_dataset_pickle
-from .nlp_utils.dataset_vocab.sample_build_vocab import get_built_vocab
+from leaf.pickle_dataset import PickleDataset
+from leaf.nlp_utils.sample_build_vocab import get_built_vocab
 
 
 def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
@@ -37,14 +37,13 @@ def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
         trainloader, testloader = get_LEAF_dataloader(dataset='shakespeare', client_id=1)
     """
     # get vocab and index data
-    if dataset == 'sent140':
-        vocab = get_built_vocab(dataset)
 
-    pickle_root = "./process_data/pickle_dataset"
-    trainset = get_dataset_pickle(dataset_name=dataset, client_id=client_id, dataset_type='train', pickle_root=pickle_root)
-    testset = get_dataset_pickle(dataset_name=dataset, client_id=client_id, dataset_type='test', pickle_root=pickle_root)
+    pdataset = PickleDataset(dataset_name=dataset)
+    trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
+    testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
 
     # get vocab and index data
+
     if dataset == 'sent140':
         vocab = get_built_vocab(dataset)
         trainset.token2seq(vocab, maxlen=300)
@@ -59,18 +58,24 @@ def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
         batch_size=len(testset),
         drop_last=False,
         shuffle=False)
-    
+        
     return trainloader, testloader
 
 
-def get_LEAF_all_test_dataloader(dataset: str):
+def get_LEAF_all_test_dataloader(dataset: str, batch_size=128):
     """Get dataloader for all clients' test pickle file
 
     Args:
         dataset (str): dataset name
+        batch_size (int, optional): the number of batch size for dataloader. Defaults to 128
 
     Returns:
         ConcatDataset for all clients' test dataset
     """
-    all_testset = get_LEAF_all_test_dataloader(dataset=dataset)
-    return all_testset
+    pdataset = PickleDataset(dataset_name=dataset, data_root="../datasets", pickle_root="./pickle_datasets")
+    all_testset = pdataset.get_dataset_pickle(dataset_type="test")
+    test_loader = torch.utils.data.DataLoader(
+                    all_testset,
+                    batch_size=batch_size,
+                    drop_last=True)  # avoid train dataloader size 0
+    return test_loader

@@ -19,7 +19,7 @@ import sys
 
 sys.path.append("../../../")
 from models.rnn import RNN_Shakespeare
-from datasets.leaf_data_process import get_LEAF_dataloader
+from leaf.dataloader import get_LEAF_dataloader
 
 
 # 660 client in total
@@ -37,20 +37,11 @@ class RNNSTrainer(SerialTrainer):
                          client_num,
                          aggregator,
                          cuda=cuda,
-                         logger=logger)
+                         logger=Logger())
         self.args = args
 
     def _get_dataloader(self, client_id):
-
-        rank = dist.get_rank()
-        client_id = (rank - 1) * self.client_num + client_id
-
-        dataset_pkl_path = "client" + str(client_id) + ".pkl"
-        with open("./pkl_dataset/train/" + dataset_pkl_path, "rb") as f:
-            dataset = pickle.load(f)
-
-        trainloader = torch.utils.data.DataLoader(
-            dataset, batch_size=self.args["batch_size"])
+        trainloader, _ = get_LEAF_dataloader("shakespeare", client_id=client_id)
         return trainloader
 
     def _train_alone(self, model_parameters, train_loader):
@@ -115,7 +106,7 @@ if __name__ == "__main__":
                               "lr": 0.01,
                               "epochs": 1
                           })
-
-    manager_ = ScaleClientPassiveManager(trainer=trainer, network=network)
-
+                          
+    manager_ = ScaleClientPassiveManager(trainer=trainer, network=network, logger=Logger())
     manager_.run()
+    

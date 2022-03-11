@@ -150,14 +150,15 @@ cython_debug/
 # datasets
 fedlab_benchmarks/datasets/cifar10/*
 !fedlab_benchmarks/datasets/cifar10/*.py
+!fedlab_benchmarks/datasets/cifar10/*.ipynb
 fedlab_benchmarks/datasets/*/data
 fedlab_benchmarks/datasets/*/meta
 fedlab_benchmarks/datasets/*/MNIST
 
 
-fedlab_benchmarks/leaf/process_data/*/test
-fedlab_benchmarks/leaf/process_data/*/train
-fedlab_benchmarks/leaf/process_data/pickle_dataset
+fedlab_benchmarks/leaf/pickle_datasets/*
+fedlab_benchmarks/leaf/pickle_datasets/*
+
 actions-runner
 
 # tests
@@ -165,5 +166,3 @@ fedlab_benchmarks/fedavg/standalone/*.txt
 fedlab_benchmarks/fedavg/standalone/*.ipynb
 fedlab_benchmarks/fedavg/standalone/*.sh
 
-# recoder
-*.txt

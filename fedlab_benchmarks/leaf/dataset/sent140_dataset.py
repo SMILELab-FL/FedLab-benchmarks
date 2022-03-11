@@ -1,29 +1,33 @@
-"""
-    This is modified by [RSE-Adversarial-Defense-Github]
-    https://github.com/Raibows/RSE-Adversarial-Defense/tree/de7bb5afc94d3d262cf0b08f55952800161865ce
-"""
 
-import os
+import sys
 import torch
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+sys.path.append(str(BASE_DIR))
+
 from torch.utils.data import Dataset
-from ..nlp_utils.tokenizer import Tokenizer
+from leaf.nlp_utils.tokenizer import Tokenizer
 
 
 class Sent140Dataset(Dataset):
 
-    def __init__(self, client_id: int, client_str: str, input: list, output: list,
+    def __init__(self, client_id: int, client_str: str, data: list, targets: list,
                  is_to_tokens=True, tokenizer=None):
         """get `Dataset` for sent140 dataset
 
         Args:
             client_id (int): client id
             client_str (str): client name string
+            data (list): sentence list data
+            targets (list): next-character target list
             is_to_tokens (bool, optional), if tokenize data by using tokenizer
             tokenizer (Tokenizer, optional), tokenizer
         """
         self.client_id = client_id
         self.client_str = client_str
-        self.data, self.targets = self.get_client_data_target(input, output)
+        self.data = data
+        self.targets = targets
         self.data_token = []
         self.data_seq = []
         self.targets_tensor = []
@@ -31,19 +35,17 @@ class Sent140Dataset(Dataset):
         self.tokenizer = tokenizer if tokenizer else Tokenizer('normal')
         self.maxlen = None
 
+        self._process_data_target()
         if is_to_tokens:
-            self.data2token()
+            self._data2token()
 
-    def get_client_data_target(self, input, output):
-        """process client data and target for input and output
-
-        Returns: data and target for client id
+    def _process_data_target(self):
+        """process client's data and target
         """
-        data = [e[4] for e in input]
-        targets = torch.tensor(output, dtype=torch.long)
-        return data, targets
+        self.data = [e[4] for e in self.data]
+        self.targets = torch.tensor(self.targets, dtype=torch.long)
 
-    def data2token(self):
+    def _data2token(self):
         assert self.data is not None
         for sen in self.data:
             self.data_token.append(self.tokenizer(sen))

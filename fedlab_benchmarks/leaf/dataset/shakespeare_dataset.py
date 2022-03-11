@@ -19,21 +19,23 @@ from torch.utils.data import Dataset
 
 class ShakespeareDataset(Dataset):
 
-    def __init__(self, client_id: int, client_str: str, input: list, output: list):
+    def __init__(self, client_id: int, client_str: str, data: list, targets: list):
         """get `Dataset` for shakespeare dataset
 
         Args:
             client_id (int): client id
             client_str (str): client name string
-            input (list): input sentence list data
-            output (list): output next-character list
+            data (list): sentence list data
+            targets (list): next-character target list
         """
         self.client_id = client_id
         self.client_str = client_str
-        self.ALL_LETTERS, self.VOCAB_SIZE = self.build_vocab()
-        self.data, self.targets = self.get_client_data_target(input, output)
+        self.ALL_LETTERS, self.VOCAB_SIZE = self._build_vocab()
+        self.data = data
+        self.targets = targets
+        self._process_data_target()
 
-    def build_vocab(self):
+    def _build_vocab(self):
         """ according all letters to build vocab
 
         Vocabulary re-used from the Federated Learning for Text Generation tutorial.
@@ -42,24 +44,17 @@ class ShakespeareDataset(Dataset):
         Returns:
             all letters vocabulary list and length of vocab list
         """
-        CHAR_VOCAB = list(
-            'dhlptx@DHLPTX $(,048cgkoswCGKOSW[_#\'/37;?bfjnrvzBFJNRVZ"&*.26:\naeimquyAEIMQUY]!%)-159\r'
-        )
-        ALL_LETTERS = "".join(CHAR_VOCAB)
-        VOCAB_SIZE = len(ALL_LETTERS) + 4  # Vocabulary with OOV ID, zero for the padding, and BOS, EOS IDs.
+        ALL_LETTERS = "\n !\"&'(),-.0123456789:;>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[]abcdefghijklmnopqrstuvwxyz}"
+        VOCAB_SIZE = len(ALL_LETTERS)
         return ALL_LETTERS, VOCAB_SIZE
 
-    def get_client_data_target(self, input: str, output: str):
-        """process client data and target for input and output
-
-        Returns: data and target for client id
+    def _process_data_target(self):
+        """process client's data and target
         """
-        data = torch.tensor(
-            [self.__sentence_to_indices(sentence) for sentence in input])
-        targets = torch.tensor(
-            [self.__letter_to_index(letter) for letter in output])
-
-        return data, targets
+        self.data = torch.tensor(
+            [self.__sentence_to_indices(sentence) for sentence in self.data])
+        self.targets = torch.tensor(
+            [self.__letter_to_index(letter) for letter in self.targets])
 
     def __sentence_to_indices(self, sentence: str):
         """Returns list of integer for character indices in ALL_LETTERS
