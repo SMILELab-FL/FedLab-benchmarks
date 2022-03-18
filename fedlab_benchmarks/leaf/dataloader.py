@@ -22,14 +22,17 @@ from leaf.pickle_dataset import PickleDataset
 from leaf.nlp_utils.sample_build_vocab import get_built_vocab
 
 
-def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
+def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128, data_root: str = None, pickle_root: str = None):
     """Get dataloader with ``batch_size`` param for client with ``client_id``
 
     Args:
         dataset (str):  dataset name string to get dataloader
         client_id (int, optional): assigned client_id to get dataloader for this client. Defaults to 0
         batch_size (int, optional): the number of batch size for dataloader. Defaults to 128
-
+        data_root (str): path for data saving root.
+                        Default to None and will be modified to the datasets folder in FedLab: "fedlab-benchmarks/datasets"
+        pickle_root (str): path for pickle dataset file saving root.
+                        Default to None and will be modified to Path(__file__).parent / "pickle_datasets"
     Returns:
         A tuple with train dataloader and test dataloader for the client with `client_id`
 
@@ -38,7 +41,7 @@ def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
     """
     # get vocab and index data
 
-    pdataset = PickleDataset(dataset_name=dataset)
+    pdataset = PickleDataset(dataset_name=dataset, data_root=data_root, pickle_root=pickle_root)
     trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
     testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
 
@@ -62,18 +65,27 @@ def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128):
     return trainloader, testloader
 
 
-def get_LEAF_all_test_dataloader(dataset: str, batch_size=128):
+def get_LEAF_all_test_dataloader(dataset: str, batch_size=128, data_root: str = None, pickle_root: str = None):
     """Get dataloader for all clients' test pickle file
 
     Args:
         dataset (str): dataset name
         batch_size (int, optional): the number of batch size for dataloader. Defaults to 128
-
+        data_root (str): path for data saving root.
+                        Default to None and will be modified to the datasets folder in FedLab: "fedlab-benchmarks/datasets"
+        pickle_root (str): path for pickle dataset file saving root.
+                        Default to None and will be modified to Path(__file__).parent / "pickle_datasets"
     Returns:
         ConcatDataset for all clients' test dataset
     """
-    pdataset = PickleDataset(dataset_name=dataset, data_root="../datasets", pickle_root="./pickle_datasets")
+    pdataset = PickleDataset(dataset_name=dataset, data_root=data_root, pickle_root=pickle_root)
     all_testset = pdataset.get_dataset_pickle(dataset_type="test")
+
+    # get vocab and index data
+    if dataset == 'sent140':
+        vocab = get_built_vocab(dataset)
+        all_testset.token2seq(vocab, maxlen=300)
+
     test_loader = torch.utils.data.DataLoader(
                     all_testset,
                     batch_size=batch_size,
