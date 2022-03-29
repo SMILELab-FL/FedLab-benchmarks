@@ -166,3 +166,4 @@ fedlab_benchmarks/fedavg/standalone/*.txt
 fedlab_benchmarks/fedavg/standalone/*.ipynb
 fedlab_benchmarks/fedavg/standalone/*.sh
 
+.script.ipynb
