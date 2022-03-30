@@ -41,9 +41,7 @@ class PerFedAvgClientManager(ClientPassiveManager):
                 elif self.flag == 0:  # Fine-tune(Reptile)
                     for client_id in client_id_list:
                         self.output.append(
-                            self._fine_tuner.train(
-                                client_id, model_parameters, validation=False
-                            )
+                            self._fine_tuner.train(client_id, model_parameters)
                         )
                 elif self.flag == -1:  # Personalizaiton and final evaluation
                     for client_id in client_id_list:

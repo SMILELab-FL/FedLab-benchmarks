@@ -10,6 +10,17 @@ from utils import get_optimizer
 
 
 class PersonalizaitonHandler(ParameterServerBackendHandler):
+    """handle personalization and final evaluation
+
+    Args:
+        model (torch.nn.Module): Global model.
+        global_round (int): Usually set as 1, it's okay to set > 1 for testing more round.
+        client_num_in_total (int): Quantity of clients.
+        client_num_per_round (int): Client num of participating per and eval in each global round
+        cuda (bool, optional): True For using GPUs. Defaults to False.
+        logger (fedelab.utils.Logger, optional): Logger for logging. Defaults to Logger().
+    """
+
     def __init__(
         self,
         model,
@@ -19,16 +30,6 @@ class PersonalizaitonHandler(ParameterServerBackendHandler):
         cuda=False,
         logger=Logger(log_name="pers"),
     ):
-        """handle personalization and final evaluation
-
-        Args:
-            model (torch.nn.Module): Global model.
-            global_round (int): Usually set as 1, it's okay to set > 1 for testing more round.
-            client_num_in_total (int): Quantity of clients.
-            client_num_per_round (int): Client num of participating per and eval in each global round
-            cuda (bool, optional): True For using GPUs. Defaults to False.
-            logger (fedelab.utils.Logger, optional): Logger for logging. Defaults to Logger().
-        """
         super(PersonalizaitonHandler, self).__init__(model, cuda)
         self.client_num_in_total = client_num_in_total
         self.client_num_per_round = client_num_per_round
@@ -72,8 +73,7 @@ class PersonalizaitonHandler(ParameterServerBackendHandler):
             List[List]: each list includes client's IDs for corresponding process.
         """
         selected_clients = random.sample(
-            range(int(self.client_num_in_total * 0.8), self.client_num_in_total),
-            self.client_num_per_round,
+            range(self.client_num_in_total), self.client_num_per_round,
         )
         self.logger.info(
             "selected clients in round [{}]: {}".format(self.round, selected_clients)
@@ -114,6 +114,19 @@ class PersonalizaitonHandler(ParameterServerBackendHandler):
 
 
 class FineTuneHandler(ParameterServerBackendHandler):
+    """Handle fine-tuning procedure
+
+    Args:
+        model (torch.nn.Module): Global Model
+        global_round (int): Fine-tuning communication round
+        client_num_in_total (int): Quantity of clients.
+        client_num_per_round (int): Client num of participating per and eval in each global round
+        optimizer_type (str): Declare type of server optimizer
+        optimizer_args (dict): Provide necessary args for generating server optimizer
+        cuda (bool, optional): True for using GPUs. Defaults to False.
+        logger (fedlab.utils.Logger, optional): Defaults to Logger().
+    """
+
     def __init__(
         self,
         model,
@@ -125,18 +138,6 @@ class FineTuneHandler(ParameterServerBackendHandler):
         cuda=False,
         logger=Logger(log_name="fine-tune"),
     ):
-        """Handle fine-tuning procedure
-
-        Args:
-            model (torch.nn.Module): Global Model
-            global_round (int): Fine-tuning communication round
-            client_num_in_total (int): Quantity of clients.
-            client_num_per_round (int): Client num of participating per and eval in each global round
-            optimizer_type (str): Declare type of server optimizer
-            optimizer_args (dict): Provide necessary args for generating server optimizer
-            cuda (bool, optional): True for using GPUs. Defaults to False.
-            logger (fedlab.utils.Logger, optional): Defaults to Logger().
-        """
         super(FineTuneHandler, self).__init__(model, cuda)
         self.client_num_in_total = client_num_in_total
         self.client_num_per_round = client_num_per_round
@@ -151,7 +152,7 @@ class FineTuneHandler(ParameterServerBackendHandler):
 
     def allocate_clients(self, n):
         selected_clients = random.sample(
-            range(int(self.client_num_in_total * 0.8)), self.client_num_per_round
+            range(self.client_num_in_total), self.client_num_per_round
         )
         self.logger.info(
             "selected clients in round [{}]: {}".format(self.round, selected_clients)
@@ -185,6 +186,19 @@ class FineTuneHandler(ParameterServerBackendHandler):
 
 
 class FedAvgHandler(ParameterServerBackendHandler):
+    """Handle FedAvg training procedure
+
+    Args:
+        model (torch.nn.Module): Global Model
+        global_round (int): Fine-tuning communication round
+        client_num_in_total (int): Quantity of clients.
+        client_num_per_round (int): Client num of participating per and eval in each global round
+        optimizer_type (str): Declare type of server optimizer
+        optimizer_args (dict): Provide necessary args for generating server optimizer
+        cuda (bool, optional): True for using GPUs. Defaults to False.
+        logger (fedlab.utils.Logger, optional): Defaults to Logger().
+    """
+
     def __init__(
         self,
         model,
@@ -212,7 +226,7 @@ class FedAvgHandler(ParameterServerBackendHandler):
 
     def allocate_clients(self, n):
         selected_clients = random.sample(
-            range(int(self.client_num_in_total * 0.8)), self.client_num_per_round
+            range(self.client_num_in_total), self.client_num_per_round
         )
         self.logger.info(
             "selected clients in round [{}]: {}".format(self.round, selected_clients)
@@ -282,6 +296,15 @@ def _deserialize_gradients(model: torch.nn.Module, serialized_gradients: torch.T
 
 
 def _allocate_clients(selected_clients, n):
+    """Allocate selected clients at each round to all processes as evenly as possible
+
+    Args:
+        selected_clients (List[int]): Selected clients ID  
+        n (int): Num of processes
+
+    Returns:
+        List[List[int]]: Allocated clients ID for each process.
+    """
     client_num = len(selected_clients)
     step = int(client_num / n)
     allocated_clients = [
