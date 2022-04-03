@@ -4,21 +4,27 @@ from fedlab.utils.serialization import SerializationTool
 from fedlab.core.client.trainer import ClientSGDTrainer
 from fedlab.utils.functional import evaluate
 from fedlab.utils.logger import Logger
-from torch import nn, optim
+from torch.utils.data import DataLoader, random_split
 from utils import get_optimizer
 from tqdm import trange
+
+from sys import path
+
+path.append("../")
+
+from leaf.pickle_dataset import PickleDataset
 
 
 class PerFedAvgTrainer(ClientSGDTrainer):
     """
     Args:
         model (torch.nn.Module): Global model's architecture
-        trainloader_list (List[torch.utils.data.DataLoader]): Consider as all client's local train dataloader.
-        valloader_list (List[torch.utils.data.DataLoader]): Consider as all client's local val dataloader.
         optimizer_type (str): Local optimizer.
         optimizer_args (dict): Provides necessary args for build local optimizer.
         criterion (torch.nn.CrossEntropyLoss / torch.nn.MSELoss()): Local loss function.
         epochs (int): Num of local training epoch. Personalization's local epochs may differ from others.
+        batch_size (int): Batch size of training and testing.
+        pers_round (int): Num of personalization round.
         cuda (bool): True for using GPUs.
         logger (fedlab.utils.Logger): Object of Logger.
     """
@@ -26,21 +32,20 @@ class PerFedAvgTrainer(ClientSGDTrainer):
     def __init__(
         self,
         model,
-        trainloader_list,
-        valloader_list,
         optimizer_type,
         optimizer_args,
         criterion,
         epochs,
+        batch_size,
         pers_round,
         cuda,
         logger=Logger(),
     ):
-        self.trainloader_list = trainloader_list
-        self.valloader_list = valloader_list
+        self.dataset = PickleDataset("femnist")
         self.optimizer_type = optimizer_type
         self.optimizer_args = optimizer_args
         self.pers_round = pers_round
+        self.batch_size = batch_size
         super().__init__(
             model,
             None,
@@ -60,7 +65,9 @@ class PerFedAvgTrainer(ClientSGDTrainer):
         Returns:
             [torch.Tensor, List[int, List[torch.Tensor]]]: return updated model's serialized parameters, client weight and gradients
         """
-        trainloader = self.trainloader_list[client_id]
+        trainloader = DataLoader(
+            self.dataset.get_dataset_pickle("train", client_id), self.batch_size
+        )
         if model_parameters is not None:
             SerializationTool.deserialize_model(self._model, model_parameters)
         freezed_model = deepcopy(self._model)
@@ -76,8 +83,12 @@ class PerFedAvgTrainer(ClientSGDTrainer):
         return weight, gradients
 
     def evaluate(self, client_id, model_parameters=None, verbose=False):
-        trainloader = self.trainloader_list[client_id]
-        valloader = self.valloader_list[client_id]
+        dataset = self.dataset.get_dataset_pickle("test", client_id)
+        trainset, valset = random_split(
+            dataset, [int(0.8 * len(dataset)), len(dataset) - int(0.8 * len(dataset))]
+        )
+        trainloader = DataLoader(trainset, self.batch_size)
+        valloader = DataLoader(valset, self.batch_size)
         if model_parameters is not None:
             SerializationTool.deserialize_model(self._model, model_parameters)
         init_loss, init_acc = evaluate(self._model, self.criterion, valloader)
@@ -115,30 +126,3 @@ class PerFedAvgTrainer(ClientSGDTrainer):
                 loss.backward()
                 optimizer.step()
 
-
-if __name__ == "__main__":
-    # For testing only. Actual main() is in single_process.py
-    from utils import get_args, get_dataloader, get_datasets
-    from models import get_model
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    args = get_args(parser)
-    dataset = get_datasets(args)
-    train, val, test = get_dataloader(dataset, args)
-    model = get_model(args)
-    optimzier = optim.SGD(model.parameters(), lr=1e-2)
-    criterion = nn.CrossEntropyLoss()
-    trainer = PerFedAvgTrainer(
-        model,
-        train,
-        val,
-        "sgd",
-        dict(lr=1e-2),
-        criterion,
-        10,
-        False,
-        Logger(log_name="node 0"),
-    )
-    weight, gradients = trainer.train(0, SerializationTool.serialize_model(model))
-    trainer.evaluate(0)

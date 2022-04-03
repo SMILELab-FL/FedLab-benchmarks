@@ -1,184 +1,4 @@
-import argparse
-import torch
-import os
-import numpy as np
 from torch.optim import Adam, SGD
-from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
-from fedlab.utils.dataset.sampler import SubsetSampler
-from fedlab.utils.functional import evaluate
-
-
-def list_dir(root):
-    dir_list = [os.path.join(root, d) for d in os.listdir(root)]
-    return dir_list
-
-
-def get_datasets(args, datasets_root):
-    trainset = None
-    testset = None
-    if args.dataset == "mnist":
-        train_root = test_root = datasets_root
-        trainset = datasets.MNIST(
-            root=train_root, train=True, transform=transforms.ToTensor(), download=True
-        )
-        testset = datasets.MNIST(
-            root=test_root, train=False, transform=transforms.ToTensor(), download=True
-        )
-    elif args.dataset == "emnist":
-        train_root = test_root = datasets_root
-        trainset = datasets.EMNIST(
-            root=train_root,
-            split="byclass",
-            train=True,
-            transform=transforms.ToTensor(),
-            download=True,
-        )
-        testset = datasets.EMNIST(
-            root=test_root,
-            split="byclass",
-            train=False,
-            transform=transforms.ToTensor(),
-            download=True,
-        )
-    return trainset, testset
-
-
-def get_dataloader(datasets, args):
-    """generate torch.utils.data.DataLoader of train, val, testset
-
-    Args:
-        datasets (torchvision.datasets): origin trainset and testset
-        args (Namespace): provides necessary args for guiding generation
-
-    Returns:
-        tuple[List[DataLoader], List[DataLoader]]: tranloader_list, valloader_list
-        trainloader_list[i] and valloader_list[i] are for client i specifically.
-    """
-    print(
-        "Generating client's train dataloader and test dataloader, it may takes a while, please be patient. :-)"
-    )
-    trainset, testset = datasets
-
-    train_client_num = int(0.8 * args.client_num_in_total)
-    test_client_num = args.client_num_in_total - train_client_num
-
-    # Non-IID
-    train_sample_indices = _noniid_slicing(
-        trainset, train_client_num, 2 * train_client_num
-    )
-    val_sample_indices = _noniid_slicing(testset, test_client_num, 2 * test_client_num)
-
-    # IID
-    # random.seed(1000)
-    # num_items = int(len(trainset) / train_client_num)
-    # train_sample_indices, all_idxs = {}, [i for i in range(len(trainset))]
-    # for i in range(train_client_num):
-    #     train_sample_indices[i] = random.sample(all_idxs, num_items)
-    #     all_idxs = list(set(all_idxs) - set(train_sample_indices[i]))
-    # num_items = int(len(testset) / test_client_num)
-    # val_sample_indices, all_idxs = {}, [i for i in range(len(testset))]
-    # for i in range(test_client_num):
-    #     val_sample_indices[i] = random.sample(all_idxs, num_items)
-    #     all_idxs = list(set(all_idxs) - set(val_sample_indices[i]))
-
-    train_part_indices = {}
-    val_part_indices = {}
-    for client_id, indices in train_sample_indices.items():
-        train_part_indices.update({client_id: indices[: int(0.8 * len(indices))]})
-        val_part_indices.update({client_id: indices[int(0.8 * len(indices)) :]})
-    for client_id, indices in val_sample_indices.items():
-        train_part_indices.update(
-            {client_id + train_client_num: indices[: int(0.8 * len(indices))]}
-        )
-        val_part_indices.update(
-            {client_id + train_client_num: indices[int(0.8 * len(indices)) :]}
-        )
-
-    trainloader_list = [
-        DataLoader(
-            dataset=trainset,
-            batch_size=args.batch_size,
-            sampler=SubsetSampler(train_part_indices[idx]),
-        )
-        for idx in range(train_client_num)
-    ] + [
-        DataLoader(
-            dataset=testset,
-            batch_size=args.batch_size,
-            sampler=SubsetSampler(train_part_indices[idx]),
-        )
-        for idx in range(train_client_num, args.client_num_in_total)
-    ]
-
-    valloader_list = [
-        DataLoader(
-            dataset=trainset,
-            batch_size=args.batch_size,
-            sampler=SubsetSampler(val_part_indices[idx]),
-        )
-        for idx in range(train_client_num)
-    ] + [
-        DataLoader(
-            dataset=testset,
-            batch_size=args.batch_size,
-            sampler=SubsetSampler(val_part_indices[idx]),
-        )
-        for idx in range(train_client_num, args.client_num_in_total)
-    ]
-    return trainloader_list, valloader_list
-
-
-def _noniid_slicing(dataset, num_clients, num_shards):
-    """Slice a dataset for non-IID. Same code from fedlab.utils.dataset.slicing.noniid_slicing(), additionally with fixed random seed.
-    Args:
-        dataset (torch.utils.data.Dataset): Dataset to slice.
-        num_clients (int):  Number of client.
-        num_shards (int): Number of shards.
-    
-    Notes:
-        The size of a shard equals to ``int(len(dataset)/num_shards)``.
-        Each client will get ``int(num_shards/num_clients)`` shards.
-
-    Returns：
-        dict: ``{ 0: indices of dataset, 1: indices of dataset, ..., k: indices of dataset }``
-    """
-    # Designated random seed to make sure all workers split datasets in the same way.
-    np.random.seed(1000)
-
-    total_sample_nums = len(dataset)
-    size_of_shards = int(total_sample_nums / num_shards)
-
-    # the number of shards that each one of clients can get
-    shard_pc = int(num_shards / num_clients)
-
-    dict_users = {i: np.array([], dtype="int64") for i in range(num_clients)}
-
-    labels = np.array(dataset.targets)
-    idxs = np.arange(total_sample_nums)
-
-    # sort sample indices according to labels
-    idxs_labels = np.vstack((idxs, labels))
-    idxs_labels = idxs_labels[:, idxs_labels[1, :].argsort()]
-    idxs = idxs_labels[
-        0, :
-    ]  # corresponding labels after sorting are [0, .., 0, 1, ..., 1, ...]
-
-    # assign
-    idx_shard = [i for i in range(num_shards)]
-    for i in range(num_clients):
-        rand_set = set(np.random.choice(idx_shard, shard_pc, replace=False))
-        idx_shard = list(set(idx_shard) - rand_set)
-        for rand in rand_set:
-            dict_users[i] = np.concatenate(
-                (
-                    dict_users[i],
-                    idxs[rand * size_of_shards : (rand + 1) * size_of_shards],
-                ),
-                axis=0,
-            )
-
-    return dict_users
 
 
 def get_optimizer(model, optimizer, args=None):
@@ -200,21 +20,12 @@ def get_optimizer(model, optimizer, args=None):
 
 def get_args(parser):
     parser.add_argument(
-        "--dataset",
-        type=str,
-        default="emnist",
-        help="dataset name, expected of emnist or mnist",
-    )
-    parser.add_argument(
-        "--client_num_in_total",
-        type=int,
-        default=3400,
-        help="total num of clients, default value is set according to paper",
+        "--client_num_in_total", type=int, default=3597, help="total num of clients",
     )
     parser.add_argument(
         "--client_num_per_round",
         type=int,
-        default=5,
+        default=20,
         help="determine how many clients join training in one communication round",
     )
     parser.add_argument(
@@ -225,7 +36,7 @@ def get_args(parser):
     )
     parser.add_argument("--epochs", type=int, default=500, help="communication round")
     parser.add_argument(
-        "--inner_loops", type=int, default=20, help="local epochs in FedAvg section"
+        "--inner_loops", type=int, default=10, help="local epochs in FedAvg section"
     )
     parser.add_argument(
         "--server_lr",
@@ -294,27 +105,3 @@ def get_args(parser):
     parser.add_argument("--ethernet", type=str, default=None)
     _args = parser.parse_args()
     return _args
-
-
-if __name__ == "__main__":
-    # For testing only. Actual main() is in single_process.py
-    parser = argparse.ArgumentParser()
-    args = get_args(parser)
-    dataset = get_datasets(args)
-    train, val = get_dataloader(dataset, args)
-    from models import get_model
-
-    model = get_model(args)
-    loader = train[0]
-    criterion = torch.nn.CrossEntropyLoss()
-    optimzier = torch.optim.SGD(model.parameters(), lr=1e-2)
-
-    for x, y in loader:
-        logit = model(x)
-        loss = criterion(logit, y)
-
-        optimzier.zero_grad()
-        loss.backward()
-        optimzier.step()
-
-    loss, avg = evaluate(model, criterion, val[0])
