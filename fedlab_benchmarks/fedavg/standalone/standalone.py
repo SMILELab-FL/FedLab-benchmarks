@@ -67,8 +67,13 @@ test_loader = torch.utils.data.DataLoader(testset,
 # setup
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
-gpu = get_best_gpu()
-model = CNN_MNIST().cuda(gpu)
+if torch.cuda.is_available():
+    device = get_best_gpu()
+    cuda = True
+else:
+    device = torch.device("cpu")
+    cuda = False
+model = CNN_MNIST().to(device)
 
 # FL settings
 num_per_round = int(args.total_client * args.sample_ratio)
@@ -87,6 +92,7 @@ trainer = SubsetSerialTrainer(model=local_model,
                               dataset=trainset,
                               data_slices=data_indices,
                               aggregator=aggregator,
+                              cuda=cuda,
                               args={
                                   "batch_size": args.batch_size,
                                   "epochs": args.epochs,
