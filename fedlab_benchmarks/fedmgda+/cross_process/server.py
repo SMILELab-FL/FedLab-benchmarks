@@ -43,9 +43,11 @@ class FedMGDA_handler(SyncParameterServerHandler):
         self.dynamic_lambdas = torch.Tensor(self.optim_lambdas(gradients, lambda0)).view(-1)
         print(self.dynamic_lambdas)
         # aggregate grads
-        dt = Aggregators.fedavg_aggregate(gradients, self.dynamic_lambdas)
-        serialized_parameters = self.model_parameters - dt * self.learning_rate
-        SerializationTool.deserialize_model(self._model, serialized_parameters)
+        #dt = Aggregators.fedavg_aggregate(gradients, self.dynamic_lambdas)
+        #serialized_parameters = self.model_parameters - dt * self.learning_rate
+        #SerializationTool.deserialize_model(self._model, serialized_parameters)
+        aggregated_parameters = Aggregators.fedavg_aggregate(model_parameters_list, self.dynamic_lambdas)
+        SerializationTool.deserialize_model(self._model, aggregated_parameters)
 
     def optim_lambdas(self, gradients, lambda0):
         n = len(gradients)

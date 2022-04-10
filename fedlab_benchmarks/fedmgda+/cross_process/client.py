@@ -3,14 +3,76 @@ import torch
 import argparse
 import sys
 import os
+import tqdm
+from copy import deepcopy
+
+import torchvision
+from torchvision import transforms
 
 from torch import nn
 from fedlab.core.client.manager import ClientPassiveManager
 from fedlab.core.client.trainer import ClientSGDTrainer
 from fedlab.core.network import DistNetwork
-from fedlab.utils.logger import Logger
+from fedlab.utils import Logger, SerializationTool
+from fedlab.utils.functional import load_dict
+from fedlab.utils.dataset import SubsetSampler
 
 from setting import get_model, get_dataset
+
+
+class ProxTrainer(ClientSGDTrainer):
+
+    def __init__(
+            self,
+            model,
+            data_loader,
+            epochs,
+            optimizer,
+            criterion,
+            mu,
+            cuda=True,
+            logger=Logger(),
+    ):
+        super().__init__(model,
+                         data_loader,
+                         epochs,
+                         optimizer,
+                         criterion,
+                         cuda=cuda,
+                         logger=logger)
+
+        self.mu = mu
+
+    def train(self, model_parameters) -> None:
+        frz_model = deepcopy(self._model)
+        SerializationTool.deserialize_model(frz_model, model_parameters)
+        SerializationTool.deserialize_model(
+            self._model, model_parameters)  # load parameters
+        self._LOGGER.info("Local train procedure is running")
+        for ep in range(self.epochs):
+            self._model.train()
+            for inputs, labels in tqdm(self._data_loader,
+                                       desc="{}, Epoch {}".format(
+                                           self._LOGGER.name, ep)):
+                if self.cuda:
+                    inputs, labels = inputs.cuda(self.gpu), labels.cuda(
+                        self.gpu)
+
+                outputs = self._model(inputs)
+                l1 = self.criterion(outputs, labels)
+                l2 = 0.0
+
+                for w0, w in zip(frz_model.parameters(),
+                                 self._model.parameters()):
+                    l2 += torch.sum(torch.pow(w - w0, 2))
+
+                loss = l1 + 0.5 * self.mu * l2
+
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+        self._LOGGER.info("Local train procedure is finished")
+
 
 if __name__ == "__main__":
 
@@ -22,7 +84,7 @@ if __name__ == "__main__":
     parser.add_argument("--rank", type=int)
 
     parser.add_argument("--lr", type=float, default=0.01)
-    parser.add_argument("--epoch", type=int, default=5)
+    parser.add_argument("--epoch", type=int, default=1)
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--batch_size", type=int, default=100)
 
@@ -38,6 +100,7 @@ if __name__ == "__main__":
 
     model = get_model(args)
     trainloader, testloader = get_dataset(args)
+    
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
     criterion = nn.CrossEntropyLoss()
 
