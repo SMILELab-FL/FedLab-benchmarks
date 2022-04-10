@@ -12,7 +12,7 @@ from fedlab.core.client.trainer import ClientSGDTrainer
 from fedlab.utils.dataset.sampler import RawPartitionSampler
 from fedlab.core.network import DistNetwork
 
-sys.path.append("../../../")
+sys.path.append("../../")
 from models.cnn import CNN_MNIST
 
 def get_dataset(args):
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument("--wd", type=float, default=0)
     parser.add_argument("--cuda", type=bool, default=True)
     args = parser.parse_args()
-    args.root = '../../../datasets/mnist/'
+    args.root = '../../datasets/mnist/'
     args.cuda = True
 
     model = CNN_MNIST()

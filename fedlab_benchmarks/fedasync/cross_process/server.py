@@ -4,7 +4,7 @@ import sys
 from fedlab.core.network import DistNetwork
 from fedlab.core.server.handler import AsyncParameterServerHandler
 from fedlab.core.server.manager import ServerAsynchronousManager
-sys.path.append("../../../")
+sys.path.append("../../")
 from models.cnn import CNN_MNIST
 import argparse
 
