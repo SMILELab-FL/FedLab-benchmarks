@@ -14,8 +14,8 @@ from fedlab.core.communicator import PackageProcessor, Package
 from setting import get_model, get_dataset
 
 
-class qfedavgTrainer(ClientSGDTrainer):
 
+class qfedavgTrainer(ClientSGDTrainer):
     def train(self, model_parameters) -> None:
         """Client trains its local model on local dataset.
 
@@ -25,10 +25,11 @@ class qfedavgTrainer(ClientSGDTrainer):
         SerializationTool.deserialize_model(
             self._model, model_parameters)  # load parameters
         self._LOGGER.info("Local train procedure is running")
+        print(type(self._data_loader))
         for ep in range(self.epochs):
             self._model.train()
-            for inputs, labels in tqdm(self._data_loader,
-                                       desc="{}, Epoch {}".format(self._LOGGER.name, ep)):
+            ret_loss = 0.0
+            for inputs, labels in self._data_loader:
                 if self.cuda:
                     inputs, labels = inputs.cuda(self.gpu), labels.cuda(
                         self.gpu)
@@ -39,7 +40,8 @@ class qfedavgTrainer(ClientSGDTrainer):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-            ret_loss = loss.item()
+                
+            ret_loss += loss.detach().item()
         self._LOGGER.info("Local train procedure is finished")
         return self.model_parameters, ret_loss
 
@@ -53,7 +55,7 @@ class qfedavgManager(ClientPassiveManager):
             elif message_code == MessageCode.ParameterUpdate:
                 model_parameters = payload[0]
                 model_parameters, train_loss = self._trainer.train(model_parameters=model_parameters)
-                self.synchronize(train_loss)
+                self.synchronize(torch.Tensor([train_loss]))
             else:
                 raise ValueError("Invalid MessageCode {}. Please see MessageCode Enum".format(message_code))
 
@@ -102,7 +104,7 @@ if __name__ == "__main__":
 
     LOGGER = Logger(log_name="client " + str(args.rank))
 
-    trainer = ClientSGDTrainer(
+    trainer = qfedavgTrainer(
         model,
         trainloader,
         epochs=args.epoch,
@@ -112,7 +114,7 @@ if __name__ == "__main__":
         logger=LOGGER,
     )
 
-    manager_ = ClientPassiveManager(trainer=trainer,
+    manager_ = qfedavgManager(trainer=trainer,
                                     network=network,
                                     logger=LOGGER) 
     manager_.run()
