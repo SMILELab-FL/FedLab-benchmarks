@@ -21,9 +21,11 @@ Personalized-FedAvg: [Improving Federated Learning Personalization via Model Agn
 
 
 
-## Run
+## Requirements
 
-If you find something wrong about experiment setting, please open an issue at this repo or [PerFedAvg](https://github.com/KarhouTam/PerFedAvg). 🙏
+fedlab==1.1.2
+
+## Run
 
 There're two way to run experiment in **Linux**. I have already set all hyper parameters well according to paper. Of course those can be modified. You can check `utils.get_args()` for more details about all hyper parameters. 
 
@@ -40,8 +42,6 @@ I have set 3 workers(process) to handle all training tasks.
 ```python
 cd multi_process/ ; sh quick_start.sh
 ```
-
-
 
 ## Performance
 
