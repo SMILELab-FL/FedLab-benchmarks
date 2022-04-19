@@ -7,8 +7,11 @@ import torchvision
 
 trainset = torchvision.datasets.MNIST(root="./", train=True, download=False)
 
-data_indices = noniid_slicing(trainset, num_clients=100, num_shards=200)
-save_dict(data_indices, "mnist_noniid.pkl")
+num_clients=10
+num_shards=200
 
-data_indices = random_slicing(trainset, num_clients=100)
-save_dict(data_indices, "mnist_iid.pkl")
+data_indices = noniid_slicing(trainset, num_clients=num_clients, num_shards=num_shards)
+save_dict(data_indices, "mnist_noniid_{}_{}.pkl".format(num_shards, num_clients))
+
+data_indices = random_slicing(trainset, num_clients=num_clients)
+save_dict(data_indices, "mnist_iid_{}.pkl".format(num_clients))

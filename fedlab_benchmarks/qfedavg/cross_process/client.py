@@ -2,20 +2,42 @@ from logging import log
 import torch
 import argparse
 import sys
+sys.path.append('../../')
 import os
 import tqdm
+import torchvision
+import torchvision.transforms as transforms
 
 from torch import nn
-from fedlab.core.client.manager import ClientPassiveManager
-from fedlab.core.client.trainer import ClientSGDTrainer
+from fedlab.core.client.manager import PassiveClientManager
+from fedlab.core.client.trainer import SGDClientTrainer
 from fedlab.core.network import DistNetwork
 from fedlab.utils import MessageCode, SerializationTool, Logger
+from fedlab.utils.functional import load_dict
+from fedlab.utils.dataset import SubsetSampler
 from fedlab.core.communicator import PackageProcessor, Package
+
+
+from models.cnn import CNN_CIFAR10, CNN_FEMNIST, CNN_MNIST
 from setting import get_model, get_dataset
 
 
 
-class qfedavgTrainer(ClientSGDTrainer):
+class qfedavgTrainer(SGDClientTrainer):
+
+    def __init__(self, model, data_loader, epochs, optimizer, criterion, cuda=False, logger=None):
+        super().__init__(model, data_loader, epochs, optimizer, criterion, cuda, logger)
+
+        self.loss = 0.0
+
+    @property
+    def uplink_package(self):
+        return [self.model_parameters, torch.Tensor([self.loss])]
+
+    def local_process(self, payload):
+        model_parameters = payload[0]
+        self.train(model_parameters)
+
     def train(self, model_parameters) -> None:
         """Client trains its local model on local dataset.
 
@@ -25,7 +47,6 @@ class qfedavgTrainer(ClientSGDTrainer):
         SerializationTool.deserialize_model(
             self._model, model_parameters)  # load parameters
         self._LOGGER.info("Local train procedure is running")
-        print(type(self._data_loader))
         for ep in range(self.epochs):
             self._model.train()
             ret_loss = 0.0
@@ -43,28 +64,7 @@ class qfedavgTrainer(ClientSGDTrainer):
                 
             ret_loss += loss.detach().item()
         self._LOGGER.info("Local train procedure is finished")
-        return self.model_parameters, ret_loss
-
-class qfedavgManager(ClientPassiveManager):
-
-    def main_loop(self):
-        while True:
-            sender_rank, message_code, payload = PackageProcessor.recv_package(src=0)
-            if message_code == MessageCode.Exit:
-                break
-            elif message_code == MessageCode.ParameterUpdate:
-                model_parameters = payload[0]
-                model_parameters, train_loss = self._trainer.train(model_parameters=model_parameters)
-                self.synchronize(torch.Tensor([train_loss]))
-            else:
-                raise ValueError("Invalid MessageCode {}. Please see MessageCode Enum".format(message_code))
-
-    def synchronize(self, train_loss):
-        self._LOGGER.info("synchronize model parameters with server")
-        model_parameters = self._trainer.model_parameters
-        pack = Package(message_code=MessageCode.ParameterUpdate,
-                       content=[model_parameters, train_loss])
-        PackageProcessor.send_package(pack, dst=0)
+        self.loss = ret_loss
 
 if __name__ == "__main__":
 
@@ -90,8 +90,28 @@ if __name__ == "__main__":
     else:
         args.cuda = False
 
-    model = get_model(args)
-    trainloader, testloader = get_dataset(args)
+    root = '../../datasets/mnist/'
+    train_transform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+    test_transform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+
+    data_indices = load_dict("mnist_noniid_200_10.pkl")
+
+    trainset = torchvision.datasets.MNIST(root=root,
+                                            train=True,
+                                            download=True,
+                                            transform=train_transform)
+    trainloader = torch.utils.data.DataLoader(
+            trainset,
+            sampler=SubsetSampler(indices=data_indices[args.rank],
+                                  shuffle=True),
+            batch_size=args.batch_size)
+
+    model = CNN_MNIST()
+
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
     criterion = nn.CrossEntropyLoss()
 
@@ -114,7 +134,7 @@ if __name__ == "__main__":
         logger=LOGGER,
     )
 
-    manager_ = qfedavgManager(trainer=trainer,
+    manager_ = PassiveClientManager(trainer=trainer,
                                     network=network,
                                     logger=LOGGER) 
     manager_.run()

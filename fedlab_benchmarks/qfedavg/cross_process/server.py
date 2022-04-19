@@ -1,30 +1,33 @@
 import argparse
-import threading
-from fedlab.utils import Logger, SerializationTool, MessageCode
-from fedlab.utils.functional import evaluate
-from fedlab.core.communicator import PackageProcessor
-from fedlab.core.server.handler import SyncParameterServerHandler
-from fedlab.core.server.manager import ServerSynchronousManager
-from fedlab.core.network import DistNetwork
-from setting import get_model, get_dataset
 import numpy as np
 import torch
 import torchvision
 from torchvision import transforms
+
+import sys
+sys.path.append('../../')
+
+from fedlab.utils import Logger, SerializationTool
+from fedlab.utils.functional import evaluate
+from fedlab.core.server.handler import SyncParameterServerHandler
+from fedlab.core.server.manager import SynchronousServerManager
+from fedlab.core.network import DistNetwork
+from models.cnn import CNN_CIFAR10, CNN_FEMNIST, CNN_MNIST
 
 
 class qfedavgServerHandler(SyncParameterServerHandler):
 
     def __init__(self,
                  model,
-                 global_round=5,
+                 global_round,
+                 sample_ratio,
                  cuda=False,
-                 sample_ratio=1,
-                 logger=Logger()):
-        super().__init__(model, global_round, cuda, sample_ratio, logger)
+                 logger=None):
+        super().__init__(model, global_round, sample_ratio, cuda, logger)
+
         self.local_losses = []
         self.lr = 0.01
-        self.q = 10
+        self.q = 5
 
         testset = torchvision.datasets.MNIST(root='../../datasets/mnist/',
                                              train=False,
@@ -37,7 +40,27 @@ class qfedavgServerHandler(SyncParameterServerHandler):
                                                       drop_last=False,
                                                       shuffle=False)
 
-    def _update_model(self, model_parameters_list, client_loss):
+        self.model_list = []
+        self.loss_list = []
+
+    def _update_global_model(self, payload):
+        model_parameters, loss = payload[0], payload[1].item()
+        self.model_list.append(model_parameters)
+        self.loss_list.append(loss)
+
+        if len(self.model_list) == self.client_num_per_round:
+            self.aggregation(self.model_list, self.loss_list)
+
+            self.model_list = []
+            self.loss_list = []
+
+            self.round += 1
+            return True
+
+    def aggregation(self, model_parameters_list, client_loss):
+
+        print("client losses: ", client_loss)
+
         gradients = [(self.model_parameters - parameters) / self.lr
                      for parameters in model_parameters_list]
         Deltas = [
@@ -51,50 +74,19 @@ class qfedavgServerHandler(SyncParameterServerHandler):
             for grad, loss in zip(gradients, client_loss)
         ]
 
-
-        print(Deltas[0].shape)
         demominator = np.sum(np.asarray(hs))
         scaled_deltas = [delta / demominator for delta in Deltas]
         updates = torch.Tensor(sum(scaled_deltas))
-        print(updates.shape)
+
         model_parameters = self.model_parameters - updates
 
         SerializationTool.deserialize_model(self._model, model_parameters)
 
         loss, acc = evaluate(self._model, torch.nn.CrossEntropyLoss(),
                              self.testloader)
-        self._LOGGER.info("check check Server evaluate loss {:.4f}, acc {:.4f}".format(
-            loss, acc))
-
-        self.cache_cnt = 0
-
-    def add_model(self, sender_rank, model_parameters, local_loss):
-        self.local_losses.append(local_loss.item())
-        self.client_buffer_cache.append(model_parameters.clone())
-        self.cache_cnt += 1
-
-        # cache is full
-        if self.cache_cnt == self.client_num_per_round:
-            self._update_model(self.client_buffer_cache, self.local_losses)
-            self.round += 1
-            return True
-        else:
-            return False
-
-class qfedavgServerManager(ServerSynchronousManager):
-
-    def main_loop(self):
-        while self._handler.stop_condition() is not True:
-            activate = threading.Thread(target=self.activate_clients)
-            activate.start()
-            while True:
-                sender, message_code, payload = PackageProcessor.recv_package()
-                if message_code == MessageCode.ParameterUpdate:
-                    if self._handler.add_model(sender, payload[0], payload[1]):
-                        break
-                else:
-                    raise Exception(
-                        "Unexpected message code {}".format(message_code))
+        self._LOGGER.info(
+            "check check Server evaluate loss {:.4f}, acc {:.4f}".format(
+                loss, acc))
 
 
 if __name__ == "__main__":
@@ -111,19 +103,19 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    model = get_model(args)
+    model = CNN_MNIST()
     LOGGER = Logger(log_name="server")
     handler = qfedavgServerHandler(model,
-                                         global_round=args.round,
-                                         logger=LOGGER,
-                                         sample_ratio=args.sample)
+                                   global_round=args.round,
+                                   logger=LOGGER,
+                                   sample_ratio=args.sample)
 
     network = DistNetwork(address=(args.ip, args.port),
                           world_size=args.world_size,
                           rank=0,
                           ethernet=args.ethernet)
 
-    manager_ = qfedavgServerManager(handler=handler,
+    manager_ = SynchronousServerManager(handler=handler,
                                         network=network,
                                         logger=LOGGER)
     manager_.run()
