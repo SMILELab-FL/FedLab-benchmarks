@@ -20,6 +20,10 @@ Top-1 accuracy for FMNIST in paper: $89.1\% \pm 0.3\%$.
 
 Top-1 accuracy for FMNIST in this demo: $89.37\% \pm 0.14 \%$​​ (5 runs)
 
+## Requirements
+
+fedlab==1.1.2
+
 ## How to Run?
 
 `start_server.sh` is for server process launch, and `start_clt.sh` is for client process launch.

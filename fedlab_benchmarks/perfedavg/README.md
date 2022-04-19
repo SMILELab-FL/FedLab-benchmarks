@@ -12,8 +12,11 @@ paper
 - Download train and test datasets manually or they will be automatically download to `fedlab_benchmarks/dataset/DATASET_NAME` from `torchvision.datasets`. You can redirect the root of datasets to your dataset directory, datasets root is set in `utils.get_datasets()`
 - Experiments are run on EMNIST(default) and MNIST.
 
-## Run
+## Requirements
 
+fedlab==1.1.2
+
+## Run
 
 There're two way to run experiment in **Linux**. I have already set all hyper parameters well according to paper. Of course those can be modified. You can check `utils.get_args()` for more details about all hyper parameters. 
 
@@ -31,8 +34,6 @@ I have set 2 workers(process) to handle all training tasks.
 ```python
 cd multi_process/ ; sh quick_start.sh
 ```
-
-
 
 ## Performance
 

@@ -17,7 +17,9 @@ demo for FedDyn using FedLab in scale mode.
 - `max_norm`: 10
 - `sample_ratio`: 1.0
 
+### Requirements
 
+fedlab=1.1.2
 
 ### How to run?
 
