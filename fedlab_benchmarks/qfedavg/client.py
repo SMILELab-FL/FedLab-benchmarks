@@ -15,13 +15,9 @@ from fedlab.core.network import DistNetwork
 from fedlab.utils import MessageCode, SerializationTool, Logger
 from fedlab.utils.functional import load_dict
 from fedlab.utils.dataset import SubsetSampler
-from fedlab.core.communicator import PackageProcessor, Package
 
 
 from models.cnn import CNN_CIFAR10, CNN_FEMNIST, CNN_MNIST
-from setting import get_model, get_dataset
-
-
 
 class qfedavgTrainer(SGDClientTrainer):
 
@@ -104,6 +100,7 @@ if __name__ == "__main__":
                                             train=True,
                                             download=True,
                                             transform=train_transform)
+
     trainloader = torch.utils.data.DataLoader(
             trainset,
             sampler=SubsetSampler(indices=data_indices[args.rank],
