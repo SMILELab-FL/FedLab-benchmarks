@@ -12,7 +12,7 @@ $ bash run.sh
 
 ## Performance
 
-Please report the performance.
+Null.
 
 ## References
 

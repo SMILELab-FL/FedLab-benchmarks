@@ -2,6 +2,10 @@
 
 FedAvg is the baseline of synchronous federated learning algorithm, and FedLab implements the algorithm flow of FedAvg, including standalone and Cross Process scenarios.
 
+## Requirements
+
+fedlab==1.1.2
+
 ## Standalone
 
 The` SerialTrainer` module is for the FL system simulation on a single machine, and its source code can be found in `fedlab/core fedlab/core/client/trainer.py`.
