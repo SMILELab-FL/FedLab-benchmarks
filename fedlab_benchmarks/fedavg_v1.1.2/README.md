@@ -4,7 +4,7 @@
 
 ## Requirements
 
-fedlab==1.5.0
+fedlab==1.1.2
 
 ## Run
 

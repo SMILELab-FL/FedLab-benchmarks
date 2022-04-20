@@ -1,0 +1,17 @@
+2022-04-20 14:57:48,410 - server - INFO - Client activation procedure
+2022-04-20 14:57:48,411 - server - INFO - Client id list: [6, 5, 4, 1, 9, 2, 7, 0, 8, 3]
+2022-04-20 14:57:53,736 - server - INFO - check check Server evaluate loss 23.0244, acc 0.1135
+2022-04-20 14:57:53,737 - server - INFO - Client activation procedure
+2022-04-20 14:57:53,738 - server - INFO - Client id list: [9, 6, 5, 3, 0, 8, 4, 7, 1, 2]
+2022-04-20 14:57:58,773 - server - INFO - check check Server evaluate loss 23.0202, acc 0.1135
+2022-04-20 14:57:58,774 - server - INFO - Client activation procedure
+2022-04-20 14:57:58,775 - server - INFO - Client id list: [8, 9, 4, 3, 5, 0, 7, 6, 2, 1]
+2022-04-20 14:58:04,149 - server - INFO - check check Server evaluate loss 23.0194, acc 0.1135
+2022-04-20 14:58:04,150 - server - INFO - Client activation procedure
+2022-04-20 14:58:04,151 - server - INFO - Client id list: [4, 2, 0, 9, 7, 3, 6, 8, 1, 5]
+2022-04-20 14:58:09,142 - server - INFO - check check Server evaluate loss 23.0192, acc 0.1135
+2022-04-20 14:58:09,143 - server - INFO - Client activation procedure
+2022-04-20 14:58:09,144 - server - INFO - Client id list: [0, 8, 9, 2, 3, 1, 7, 6, 4, 5]
+2022-04-20 14:58:14,334 - server - INFO - check check Server evaluate loss 23.0191, acc 0.1135
+2022-04-20 14:58:14,334 - server - INFO - Client activation procedure
+2022-04-20 14:58:14,334 - server - INFO - Client id list: [2, 6, 0, 5, 9, 8, 3, 7, 1, 4]
