@@ -4,7 +4,7 @@ The demo of [asynchronous federated optimization](https://arxiv.org/abs/1903.039
 
 ## Requirements
 
-fedlab==1.2.0
+fedlab==1.1.2
 
 ## Run
 
