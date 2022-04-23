@@ -33,23 +33,16 @@ class TestHandler(SyncParameterServerHandler):
                                                       shuffle=False)
 
     def _update_global_model(self, payload):
-        
-        assert torch.equal(payload[0], self.model_parameters)
+    
         self.client_buffer_cache.append(deepcopy(payload[0]))
- 
 
         if len(self.client_buffer_cache) == self.client_num_per_round:
-
-            assert torch.equal(model_parameters_list[0], model_parameters_list[1])
-            
 
             model_parameters_list = self.client_buffer_cache
             # use aggregator
             serialized_parameters = Aggregators.fedavg_aggregate(
                 model_parameters_list)
 
-            assert torch.equal(serialized_parameters, self.model_parameters)
-        
             SerializationTool.deserialize_model(self._model,
                                                 serialized_parameters)
 
