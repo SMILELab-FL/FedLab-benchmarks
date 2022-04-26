@@ -12,42 +12,38 @@ from fedlab.utils.logger import Logger
 from fedlab.utils.serialization import SerializationTool
 from trainer import PerFedAvgTrainer
 from fine_tuner import LocalFineTuner
-from models import get_model
-from utils import get_args, get_dataloader, get_datasets, get_optimizer
+from models import EmnistCNN
+from utils import get_args, get_optimizer
 from matplotlib import pyplot as plt
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = get_args(parser)
-    datasets_root = (
-        "../datasets/emnist" if args.dataset == "emnist" else "../datasets/mnist"
-    )
-    if os.path.isdir(datasets_root) is False:
-        os.mkdir(datasets_root)
-    datasets = get_datasets(args, datasets_root)
+
     logger = Logger(log_name="Personalized FedAvg")
     device = torch.device("cpu")
     if torch.cuda.is_available() and args.cuda:
         device = get_best_gpu()
-    global_model = get_model(args).to(device)
+    global_model = EmnistCNN().to(device)
     global_optimizer = get_optimizer(
         global_model, "sgd", dict(lr=args.server_lr, momentum=0.9)
     )
     criterion = torch.nn.CrossEntropyLoss()
-    trainloader_list, valloader_list = get_dataloader(datasets, args)
     # seperate clients into training clients & test clients
+
     num_training_clients = int(0.8 * args.client_num_in_total)
     training_clients_id_list = range(num_training_clients)
-    test_clients_id_list = range(num_training_clients, args.client_num_in_total)
+    num_testing_clients = args.client_num_in_total - num_training_clients
+    test_clients_id_list = range(num_testing_clients)
+
     stats = dict(init=[], per=[])
     trainer = PerFedAvgTrainer(
         model=deepcopy(global_model),
-        trainloader_list=trainloader_list,
-        valloader_list=valloader_list,
         optimizer_type="sgd",
         optimizer_args=dict(lr=args.local_lr),
         criterion=criterion,
         epochs=args.inner_loops,
+        batch_size=args.batch_size,
         pers_round=args.pers_round,
         cuda=args.cuda,
         logger=Logger(log_name="FedAvg"),
@@ -104,8 +100,8 @@ if __name__ == "__main__":
     plt.xticks(range(len(stats["init"])), range(0, len(stats["init"]) * 20, 20))
     plt.legend(
         [
-            "E = {}  init acc".format(args.epochs),
-            "E = {}  pers acc".format(args.epochs),
+            "E = {}  init acc".format(args.inner_loops),
+            "E = {}  pers acc".format(args.inner_loops),
         ]
     )
     plt.savefig(
@@ -119,12 +115,11 @@ if __name__ == "__main__":
         )
         fine_tuner = LocalFineTuner(
             deepcopy(global_model),
-            trainloader_list=trainloader_list,
-            valloader_list=valloader_list,
             optimizer_type="adam",
             optimizer_args=dict(lr=args.fine_tune_local_lr, betas=(0, 0.999)),
             criterion=criterion,
             epochs=args.fine_tune_inner_loops,
+            batch_size=args.batch_size,
             cuda=args.cuda,
             logger=Logger(log_name="fine-tune"),
         )
