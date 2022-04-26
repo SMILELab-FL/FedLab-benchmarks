@@ -12,6 +12,7 @@ Currently, following algorithms or benchrmarks are available：
 - [x] FedDyn: [Federated Learning based on Dynamic Regularization](https://openreview.net/pdf?id=B7v4QMR6Z9w)
 - [x] Personalized-FedAvg: [Improving Federated Learning Personalization via Model Agnostic Meta Learning](https://arxiv.org/pdf/1909.12488.pdf)
 - [x] qFFL: [Fair Resource Allocation in Federated Learning](https://arxiv.org/abs/1905.10497)
+- [x] FedMGDA+: [Federated Learning meets Multi-objective Optimization](https://arxiv.org/abs/2006.11489)
 
 ## Compression Algorithms
 - [x] DGC: [Deep Gradient Compression: Reducing the Communication Bandwidth for Distributed Training](https://arxiv.org/abs/1712.01887)
@@ -24,9 +25,7 @@ Currently, following algorithms or benchrmarks are available：
 
 
 ## Working list
-
 - [ ] PFL: [Debiasing Model Updates for Improving Personalized Federated Training](http://proceedings.mlr.press/v139/acar21a.html)
-- [ ] FedMGDA+: [Federated Learning meets Multi-objective Optimization](https://arxiv.org/abs/2006.11489)
 
 ------
 
