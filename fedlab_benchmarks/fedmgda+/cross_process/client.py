@@ -10,8 +10,8 @@ import torchvision
 from torchvision import transforms
 
 from torch import nn
-from fedlab.core.client.manager import ClientPassiveManager
-from fedlab.core.client.trainer import ClientSGDTrainer
+from fedlab.core.client.manager import PassiveClientManager
+from fedlab.core.client.trainer import SGDClientTrainer
 from fedlab.core.network import DistNetwork
 from fedlab.utils import Logger, SerializationTool
 from fedlab.utils.functional import load_dict
@@ -20,8 +20,8 @@ from fedlab.utils.dataset import SubsetSampler
 from setting import get_model, get_dataset
 
 
-class ProxTrainer(ClientSGDTrainer):
-
+class ProxTrainer(SGDClientTrainer):
+    """Refer to GitHub implementation https://github.com/WwZzz/easyFL """
     def __init__(
             self,
             model,
@@ -42,8 +42,14 @@ class ProxTrainer(ClientSGDTrainer):
                          logger=logger)
 
         self.mu = mu
+        self.delta_w = None
 
-    def train(self, model_parameters) -> None:
+    @property
+    def uplink_package(self):
+        return self.delta_w
+
+    def local_process(self, payload) -> None:
+        model_parameters = payload[0]
         frz_model = deepcopy(self._model)
         SerializationTool.deserialize_model(frz_model, model_parameters)
         SerializationTool.deserialize_model(
@@ -51,9 +57,7 @@ class ProxTrainer(ClientSGDTrainer):
         self._LOGGER.info("Local train procedure is running")
         for ep in range(self.epochs):
             self._model.train()
-            for inputs, labels in tqdm(self._data_loader,
-                                       desc="{}, Epoch {}".format(
-                                           self._LOGGER.name, ep)):
+            for inputs, labels in self._data_loader:
                 if self.cuda:
                     inputs, labels = inputs.cuda(self.gpu), labels.cuda(
                         self.gpu)
@@ -72,7 +76,7 @@ class ProxTrainer(ClientSGDTrainer):
                 loss.backward()
                 self.optimizer.step()
         self._LOGGER.info("Local train procedure is finished")
-
+        self.delta_w = model_parameters - self.model_gradients
 
 if __name__ == "__main__":
 
@@ -88,6 +92,8 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--batch_size", type=int, default=100)
 
+    parser.add_argument("--mu", type=float, default=1)
+
     parser.add_argument("--gpu", type=str, default="0,1,2,3")
     parser.add_argument("--ethernet", type=str, default=None)
     args = parser.parse_args()
@@ -100,7 +106,7 @@ if __name__ == "__main__":
 
     model = get_model(args)
     trainloader, testloader = get_dataset(args)
-    
+
     optimizer = torch.optim.SGD(model.parameters(), lr=args.lr)
     criterion = nn.CrossEntropyLoss()
 
@@ -113,17 +119,16 @@ if __name__ == "__main__":
 
     LOGGER = Logger(log_name="client " + str(args.rank))
 
-    trainer = ClientSGDTrainer(
-        model,
-        trainloader,
-        epochs=args.epoch,
-        optimizer=optimizer,
-        criterion=criterion,
-        cuda=args.cuda,
-        logger=LOGGER,
-    )
+    trainer = ProxTrainer(model,
+                          trainloader,
+                          epochs=args.epoch,
+                          optimizer=optimizer,
+                          criterion=criterion,
+                          mu=args.mu,
+                          cuda=args.cuda,
+                          logger=LOGGER)
 
-    manager_ = ClientPassiveManager(trainer=trainer,
+    manager_ = PassiveClientManager(trainer=trainer,
                                     network=network,
                                     logger=LOGGER)
     manager_.run()

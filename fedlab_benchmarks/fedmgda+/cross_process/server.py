@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from fedlab.utils.logger import Logger
 from fedlab.core.server.handler import SyncParameterServerHandler
-from fedlab.core.server.manager import ServerSynchronousManager
+from fedlab.core.server.manager import SynchronousServerManager
 from fedlab.core.network import DistNetwork
 
 from fedlab.utils import Aggregators, SerializationTool, Logger
@@ -13,24 +13,35 @@ from setting import get_model, get_dataset
 
 
 class FedMGDA_handler(SyncParameterServerHandler):
-
+    """Refer to GitHub implementation https://github.com/WwZzz/easyFL """
     def __init__(self,
                  model,
                  global_round=5,
                  cuda=False,
-                 sample_ratio=1,
+                 sample_ratio=1.0,
                  logger=Logger()):
-        super().__init__(model, global_round, cuda, sample_ratio, logger)
+        
+        super().__init__(model, global_round, sample_ratio, cuda, logger)
 
-        self.dynamic_lambdas = np.ones(
-            self.client_num_per_round) * 1.0 / self.client_num_per_round
         self.epsilon = 1  # 0 for fedavg, 1 for fedmdga
         self.learning_rate = 1.5  # global lr
+        self.gradients = []
 
-    def _update_model(self, model_parameters_list):
-        gradients = [
-            self.model_parameters - model for model in model_parameters_list
-        ]
+        
+        
+    def _update_global_model(self, payload):
+        self.gradients.append(payload[0])
+        self.dynamic_lambdas = np.ones(
+            self.client_num_per_round) * 1.0 / self.client_num_per_round
+
+        if len(self.gradients) == self.client_num_per_round:
+            self.aggregate()
+            self.gradients = []
+            self.round += 1
+            return True
+
+    def aggregate(self):
+        gradients = self.gradients
         # clip gradients
         for i, grad in enumerate(gradients):
             gradients[i] = grad / grad.norm()
@@ -41,13 +52,11 @@ class FedMGDA_handler(SyncParameterServerHandler):
         ]
         # optimize lambdas
         self.dynamic_lambdas = torch.Tensor(self.optim_lambdas(gradients, lambda0)).view(-1)
-        print(self.dynamic_lambdas)
+        print("lambdas {}".format(self.dynamic_lambdas))
         # aggregate grads
-        #dt = Aggregators.fedavg_aggregate(gradients, self.dynamic_lambdas)
-        #serialized_parameters = self.model_parameters - dt * self.learning_rate
-        #SerializationTool.deserialize_model(self._model, serialized_parameters)
-        aggregated_parameters = Aggregators.fedavg_aggregate(model_parameters_list, self.dynamic_lambdas)
-        SerializationTool.deserialize_model(self._model, aggregated_parameters)
+        dt = Aggregators.fedavg_aggregate(gradients, self.dynamic_lambdas)
+        serialized_parameters = self.model_parameters - self.learning_rate * dt
+        SerializationTool.deserialize_model(self._model, serialized_parameters)
 
     def optim_lambdas(self, gradients, lambda0):
         n = len(gradients)
@@ -98,7 +107,7 @@ if __name__ == "__main__":
     parser.add_argument('--round', type=int, default=5)
     parser.add_argument('--dataset', type=str)
     parser.add_argument('--ethernet', type=str, default=None)
-    parser.add_argument('--sample', type=float, default=1)
+    parser.add_argument('--sample', type=float, default=1.0)
 
     args = parser.parse_args()
 
@@ -112,7 +121,7 @@ if __name__ == "__main__":
                           world_size=args.world_size,
                           rank=0,
                           ethernet=args.ethernet)
-    manager_ = ServerSynchronousManager(handler=handler,
+    manager_ = SynchronousServerManager(handler=handler,
                                         network=network,
                                         logger=LOGGER)
     manager_.run()
