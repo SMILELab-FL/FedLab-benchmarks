@@ -12,6 +12,7 @@ from torchvision import transforms
 from torch import nn
 from fedlab.core.client.manager import PassiveClientManager
 from fedlab.core.client.trainer import SGDClientTrainer
+from fedlab.core.client.serial_trainer import SubsetSerialTrainer
 from fedlab.core.network import DistNetwork
 from fedlab.utils import Logger, SerializationTool
 from fedlab.utils.functional import load_dict
@@ -20,19 +21,41 @@ from fedlab.utils.dataset import SubsetSampler
 from setting import get_model, get_dataset
 
 
+class SerialProxTrainer(SubsetSerialTrainer):
+
+    def __init__(self,
+                 model,
+                 dataset,
+                 data_slices,
+                 logger=None,
+                 cuda=False,
+                 args=None) -> None:
+        super().__init__(model, dataset, data_slices, logger, cuda, args)
+
+    @property
+    def uplink_package(self):
+        return super().uplink_package
+
+    def local_process(self, id_list, payload):
+        return super().local_process(id_list, payload)
+
+    def _train_alone(self, model_parameters, train_loader):
+        return super()._train_alone(model_parameters, train_loader)
+
+
 class ProxTrainer(SGDClientTrainer):
     """Refer to GitHub implementation https://github.com/WwZzz/easyFL """
-    def __init__(
-            self,
-            model,
-            data_loader,
-            epochs,
-            optimizer,
-            criterion,
-            mu,
-            cuda=True,
-            logger=Logger(),
-    ):
+
+    def __init__(self,
+                 model,
+                 data_loader,
+                 epochs,
+                 optimizer,
+                 criterion,
+                 mu,
+                 cuda=True,
+                 logger=Logger(),
+                 args=None):
         super().__init__(model,
                          data_loader,
                          epochs,
@@ -40,9 +63,9 @@ class ProxTrainer(SGDClientTrainer):
                          criterion,
                          cuda=cuda,
                          logger=logger)
-
         self.mu = mu
         self.delta_w = None
+        self.args = args
 
     @property
     def uplink_package(self):
@@ -77,6 +100,7 @@ class ProxTrainer(SGDClientTrainer):
                 self.optimizer.step()
         self._LOGGER.info("Local train procedure is finished")
         self.delta_w = model_parameters - self.model_parameters
+
 
 if __name__ == "__main__":
 
@@ -126,7 +150,8 @@ if __name__ == "__main__":
                           criterion=criterion,
                           mu=args.mu,
                           cuda=args.cuda,
-                          logger=LOGGER)
+                          logger=LOGGER,
+                          args=args)
 
     manager_ = PassiveClientManager(trainer=trainer,
                                     network=network,
