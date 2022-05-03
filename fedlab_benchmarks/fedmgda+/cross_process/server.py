@@ -3,12 +3,16 @@ from copy import deepcopy
 import cvxopt
 import numpy as np
 import torch
+import torchvision
+from torchvision import transforms
+
 from fedlab.utils.logger import Logger
 from fedlab.core.server.handler import SyncParameterServerHandler
 from fedlab.core.server.manager import SynchronousServerManager
 from fedlab.core.network import DistNetwork
 
 from fedlab.utils import Aggregators, SerializationTool, Logger
+from fedlab.utils.functional import evaluate
 from setting import get_model, get_dataset
 
 
@@ -24,9 +28,18 @@ class FedMGDA_handler(SyncParameterServerHandler):
         super().__init__(model, global_round, sample_ratio, cuda, logger)
 
         self.epsilon = 1  # 0 for fedavg, 1 for fedmdga
-        self.learning_rate = 1.5  # global lr
+        self.learning_rate = 0.1  # global lr
         self.gradients = []
 
+        testset = torchvision.datasets.MNIST(root='../../datasets/mnist/',
+                                             train=False,
+                                             download=True,
+                                             transform=transforms.ToTensor())
+        self.testloader = torch.utils.data.DataLoader(testset,
+                                                 batch_size=int(
+                                                     len(testset) / 10),
+                                                 drop_last=False,
+                                                 shuffle=False)
         
         
     def _update_global_model(self, payload):
@@ -43,8 +56,10 @@ class FedMGDA_handler(SyncParameterServerHandler):
     def aggregate(self):
         gradients = self.gradients
         # clip gradients
+        """
         for i, grad in enumerate(gradients):
             gradients[i] = grad / grad.norm()
+        """
         # calculate lamda
         lambda0 = [
             1.0 / self.client_num_per_round
@@ -52,11 +67,15 @@ class FedMGDA_handler(SyncParameterServerHandler):
         ]
         # optimize lambdas
         self.dynamic_lambdas = torch.Tensor(self.optim_lambdas(gradients, lambda0)).view(-1)
-        print("lambdas {}".format(self.dynamic_lambdas))
+        self._LOGGER.info("lambdas {}".format(self.dynamic_lambdas))
         # aggregate grads
         dt = Aggregators.fedavg_aggregate(gradients, self.dynamic_lambdas)
+        self._LOGGER.info("dt {}".format(dt.norm()))
         serialized_parameters = self.model_parameters - self.learning_rate * dt
         SerializationTool.deserialize_model(self._model, serialized_parameters)
+
+        loss, acc = evaluate(self._model, torch.nn.CrossEntropyLoss(), self.testloader)
+        self._LOGGER.info("evaluate loss {}, acc {}".format(loss, acc))
 
     def optim_lambdas(self, gradients, lambda0):
         n = len(gradients)
@@ -112,7 +131,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model = get_model(args)
-    LOGGER = Logger(log_name="server")
+    LOGGER = Logger(log_name="server", log_file="./server.log")
     handler = FedMGDA_handler(model,
                               global_round=args.round,
                               logger=LOGGER,

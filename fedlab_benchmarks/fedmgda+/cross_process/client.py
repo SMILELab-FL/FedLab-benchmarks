@@ -76,7 +76,7 @@ class ProxTrainer(SGDClientTrainer):
                 loss.backward()
                 self.optimizer.step()
         self._LOGGER.info("Local train procedure is finished")
-        self.delta_w = model_parameters - self.model_gradients
+        self.delta_w = model_parameters - self.model_parameters
 
 if __name__ == "__main__":
 
@@ -87,12 +87,12 @@ if __name__ == "__main__":
     parser.add_argument("--world_size", type=int)
     parser.add_argument("--rank", type=int)
 
-    parser.add_argument("--lr", type=float, default=0.01)
+    parser.add_argument("--lr", type=float, default=0.1)
     parser.add_argument("--epoch", type=int, default=1)
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--batch_size", type=int, default=100)
 
-    parser.add_argument("--mu", type=float, default=1)
+    parser.add_argument("--mu", type=float, default=0.1)
 
     parser.add_argument("--gpu", type=str, default="0,1,2,3")
     parser.add_argument("--ethernet", type=str, default=None)
