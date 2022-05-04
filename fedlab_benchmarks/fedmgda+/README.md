@@ -10,7 +10,6 @@ fedlab==1.2.0
 
 ## Run
 
-$ cd cross_process
 $ bash run.sh
 
 ## Performance

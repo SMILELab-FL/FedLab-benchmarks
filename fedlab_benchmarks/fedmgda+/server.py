@@ -13,25 +13,25 @@ from fedlab.core.network import DistNetwork
 
 from fedlab.utils import Aggregators, SerializationTool, Logger
 from fedlab.utils.functional import evaluate
-from setting import get_model, get_dataset
+from setting import get_model, get_dataloader
 
 
 class FedMGDA_handler(SyncParameterServerHandler):
     """Refer to GitHub implementation https://github.com/WwZzz/easyFL """
     def __init__(self,
                  model,
-                 global_round=5,
+                 global_round,
                  cuda=False,
                  sample_ratio=1.0,
                  logger=Logger()):
         
         super().__init__(model, global_round, sample_ratio, cuda, logger)
 
-        self.epsilon = 1  # 0 for fedavg, 1 for fedmdga
+        self.epsilon = 0.5  # 0 for fedavg, 1 for fedmdga
         self.learning_rate = 0.1  # global lr
         self.gradients = []
 
-        testset = torchvision.datasets.MNIST(root='../../datasets/mnist/',
+        testset = torchvision.datasets.MNIST(root='../datasets/mnist/',
                                              train=False,
                                              download=True,
                                              transform=transforms.ToTensor())
@@ -43,7 +43,7 @@ class FedMGDA_handler(SyncParameterServerHandler):
         
         
     def _update_global_model(self, payload):
-        self.gradients.append(payload[0])
+        self.gradients += payload
         self.dynamic_lambdas = np.ones(
             self.client_num_per_round) * 1.0 / self.client_num_per_round
 
@@ -56,10 +56,10 @@ class FedMGDA_handler(SyncParameterServerHandler):
     def aggregate(self):
         gradients = self.gradients
         # clip gradients
-        """
+        
         for i, grad in enumerate(gradients):
             gradients[i] = grad / grad.norm()
-        """
+        
         # calculate lamda
         lambda0 = [
             1.0 / self.client_num_per_round
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     parser.add_argument('--round', type=int, default=5)
     parser.add_argument('--dataset', type=str)
     parser.add_argument('--ethernet', type=str, default=None)
-    parser.add_argument('--sample', type=float, default=1.0)
+    parser.add_argument('--sample', type=float, default=0.1)
 
     args = parser.parse_args()
 
