@@ -5,31 +5,25 @@ import sys
 
 from fedlab.utils.dataset.sampler import RawPartitionSampler
 
-sys.path.append('../../')
+sys.path.append('../')
 
 from models.cnn import CNN_CIFAR10, CNN_FEMNIST, CNN_MNIST
 from models.rnn import RNN_Shakespeare
 from models.mlp import MLP_CelebA
 from leaf.dataloader import get_LEAF_dataloader
 
-def get_dataset(args):
+def get_dataloader(args):
     if args.dataset == 'mnist':
-        root = '../../datasets/mnist/'
-        train_transform = transforms.Compose([
-            transforms.ToTensor(),
-        ])
-        test_transform = transforms.Compose([
-            transforms.ToTensor(),
-        ])
+        root = '../datasets/mnist/'
         trainset = torchvision.datasets.MNIST(root=root,
                                               train=True,
                                               download=True,
-                                              transform=train_transform)
+                                              transform=transforms.ToTensor())
 
         testset = torchvision.datasets.MNIST(root=root,
                                              train=False,
                                              download=True,
-                                             transform=test_transform)
+                                             transform=transforms.ToTensor())
 
         trainloader = torch.utils.data.DataLoader(
             trainset,
