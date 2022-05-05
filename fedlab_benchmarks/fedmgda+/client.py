@@ -74,7 +74,8 @@ class SerialProxTrainer(SubsetSerialTrainer):
                 loss.backward()
                 self.optimizer.step()
         self._LOGGER.info("Local train procedure is finished")
-        return model_parameters - self.model_parameters
+        return self.model_parameters
+        # return model_parameters - self.model_parameters
 
 
 class ProxTrainer(SGDClientTrainer):
@@ -100,7 +101,7 @@ class ProxTrainer(SGDClientTrainer):
 
     @property
     def uplink_package(self):
-        return self.delta_w
+        return self.model_parameters
 
     def local_process(self, payload) -> None:
         model_parameters = payload[0]
@@ -130,7 +131,7 @@ class ProxTrainer(SGDClientTrainer):
                 loss.backward()
                 self.optimizer.step()
         self._LOGGER.info("Local train procedure is finished")
-        self.delta_w = model_parameters - self.model_parameters
+        #self.delta_w = model_parameters - self.model_parameters
 
 
 if __name__ == "__main__":
@@ -143,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("--rank", type=int)
 
     parser.add_argument("--lr", type=float, default=0.1)
-    parser.add_argument("--epochs", type=int, default=1)
+    parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--dataset", type=str, default="mnist")
     parser.add_argument("--batch_size", type=int, default=100)
 
@@ -185,6 +186,7 @@ if __name__ == "__main__":
                               args=args)
     else:
         data_slices = load_dict("mnist_noniid_200_100.pkl")
+        #data_slices = load_dict("mnist_iid_100.pkl")
         client_id_list = [
             i for i in range((args.rank - 1) * 10, (args.rank - 1) * 10 + 10)
         ]

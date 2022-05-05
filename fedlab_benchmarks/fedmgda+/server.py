@@ -27,9 +27,8 @@ class FedMGDA_handler(SyncParameterServerHandler):
         
         super().__init__(model, global_round, sample_ratio, cuda, logger)
 
-        self.epsilon = 0.5  # 0 for fedavg, 1 for fedmdga
-        self.learning_rate = 0.1  # global lr
-        self.gradients = []
+        self.epsilon = 1  # 0 for fedavg, 1 for fedmdga
+        self.c_parameters = []
 
         testset = torchvision.datasets.MNIST(root='../datasets/mnist/',
                                              train=False,
@@ -43,18 +42,18 @@ class FedMGDA_handler(SyncParameterServerHandler):
         
         
     def _update_global_model(self, payload):
-        self.gradients += payload
+        self.c_parameters += payload
         self.dynamic_lambdas = np.ones(
             self.client_num_per_round) * 1.0 / self.client_num_per_round
 
-        if len(self.gradients) == self.client_num_per_round:
+        if len(self.c_parameters) == self.client_num_per_round:
             self.aggregate()
-            self.gradients = []
+            self.c_parameters = []
             self.round += 1
             return True
 
     def aggregate(self):
-        gradients = self.gradients
+        gradients = [self.model_parameters - c_param for c_param in self.c_parameters]
         # clip gradients
         
         for i, grad in enumerate(gradients):
@@ -71,7 +70,8 @@ class FedMGDA_handler(SyncParameterServerHandler):
         # aggregate grads
         dt = Aggregators.fedavg_aggregate(gradients, self.dynamic_lambdas)
         self._LOGGER.info("dt {}".format(dt.norm()))
-        serialized_parameters = self.model_parameters - self.learning_rate * dt
+
+        serialized_parameters = self.model_parameters - dt
         SerializationTool.deserialize_model(self._model, serialized_parameters)
 
         loss, acc = evaluate(self._model, torch.nn.CrossEntropyLoss(), self.testloader)
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     parser.add_argument('--world_size', type=int)
 
     parser.add_argument('--round', type=int, default=5)
-    parser.add_argument('--dataset', type=str)
+    parser.add_argument('--dataset', type=str, default="mnist")
     parser.add_argument('--ethernet', type=str, default=None)
     parser.add_argument('--sample', type=float, default=0.1)
 
