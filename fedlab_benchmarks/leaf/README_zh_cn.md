@@ -77,7 +77,9 @@ cd fedlab_benchmarks/datasets/data/femnist
 bash preprocess.sh -s niid --sf 0.05 -k 0 -t sample
 
 cd fedlab_benchmarks/datasets/data/shakespeare
-bash preprocess.sh -s niid --sf 0.2 -k 0 -t sample -tf 0.8
+bash preprocess.sh -s niid --sf 0.2 -k 0 -t sample  
+# bash preprocess.sh -s niid --sf 1.0 -k 0 -t sample  # get 660 users (with default --tf 0.9)
+# bash preprocess.sh -s iid --iu 1.0 --sf 1.0 -k 0 -t sample   # get all 1129 users
 
 cd fedlab_benchmarks/datasets/data/sent140
 bash ./preprocess.sh -s niid --sf 0.05 -k 3 -t sample
@@ -94,10 +96,13 @@ bash ./preprocess.sh -s niid --sf 1.0 -k 5 -t sample --tf 0.6
 通过对`preprocess.sh`设定参数，实现对原始数据的采样、划分等处理，**各数据集文件夹下的README.md均提供了脚本参数示例和解释，常见参数有：**
 
 1. `-s`表示采样方式，取值有'iid'和'niid'两种选择，表示是否使用i.i.d方式进行采样；
-2. `--sf`表示采样数据比例，取值为小数，默认为0.1；
+2. `--sf`表示采样数据样本比例，取值为小数，默认为0.1；
 3. `-k` 表示采样时所要求的用户最少样本数目，筛选掉拥有过少样本的用户，若取值为0表示不进行样本数目的筛选。
 4. `-t`表示划分训练集测试集的方式，取值为'user'则划分用户到训练-测试集合，取值为'sample'则划分每个用户的数据到训练-测试集合中；
 5. `--tf` 表示训练集的数据占比，取值为小数，默认为0.9，表示训练集:测试集=9:1。
+6. `--iu` 表示当前设置下用户总数的占比，仅当iid采样时有效; 默认为 0.01，表示此设置中的用户总数：整个数据集中的用户总数=0.01
+   
+   该参数可用于控制iid中预处理后的用户总数。例如，FEMNIST数据集中的用户总数为3500，我们可以使用`--iu=0.01`来设置iid划分处理后的用户总数为35，并将采样数据分配给这35个用户。
 
 目前FedLab的Leaf实验需要提供训练数据和测试数据，因此**需要对`preprocess.sh`提供相关的数据训练集-测试集划分参数，默认划分比例为0.9**
 

@@ -72,10 +72,12 @@ Common structure of leaf dataset folders:
 
 ```shell
 cd fedlab_benchmarks/datasets/data/femnist
-bash preprocess.sh -s niid --sf 0.05 -k 0 -t sample
+bash preprocess.sh -s niid --sf 0.05 -k 0 -t sample --tf 0.8
 
 cd fedlab_benchmarks/datasets/data/shakespeare
-bash preprocess.sh -s niid --sf 0.2 -k 0 -t sample -tf 0.8
+bash preprocess.sh -s niid --sf 0.2 -k 0 -t sample  
+# bash preprocess.sh -s niid --sf 1.0 -k 0 -t sample  # get 660 users (with default --tf 0.9)
+# bash preprocess.sh -s iid --iu 1.0 --sf 1.0 -k 0 -t sample   # get all 1129 users
 
 cd fedlab_benchmarks/datasets/data/sent140
 bash ./preprocess.sh -s niid --sf 0.05 -k 3 -t sample
@@ -96,6 +98,11 @@ By setting parameters for `preprocess.sh`, the original data can be sampled and 
 3. `-k ` := minimum number of samples per user
 4. `-t` := 'user' to partition users into train-test groups, or 'sample' to partition each user's samples into train-test groups
 5. `--tf` := fraction of data in training set, written as a decimal; default is 0.9, representing train set: test set = 9:1.
+6. `--iu` := number of users, only if i.i.d. sampling; expressed as a fraction of the total number of users; default is 0.01, representing the final total number of users in this setting : total number of users in the whole dataset = 0.01.
+   
+   It can be used to control the number of preprocessed users in i.i.d. sampling. 
+   For example, the total number of users is 3500 in FEMNIST. We can use `--iu=0.01` to set the total number of users 35 in i.i.d. sampling . And sampled data will be allocated to these 35 users.
+
 
 At present, FedLab's Leaf experiment need provided training data and test data, so **we needs to provide related data training set-test set splitting parameter for `preprocess.sh`** to carry out the experiment, default is 0.9.
 
