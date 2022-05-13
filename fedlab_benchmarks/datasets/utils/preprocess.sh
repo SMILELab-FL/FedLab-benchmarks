@@ -162,49 +162,66 @@ if [ ! -z $SFRAC ]; then
     SFRACTAG="--fraction $SFRAC"
 fi
 
-if [ "$CONT_SCRIPT" = true ] && [ ! $SAMPLE = "na" ]; then
-    if [ -d "data/sampled_data" ] && [ "$(ls -A data/sampled_data)" ]; then
-        CONT_SCRIPT=false
-    else
-        if [ ! -d "data/sampled_data" ]; then
-            mkdir data/sampled_data
-        fi
+# check COUNT_SCRIPT totally
+if [ -d "data/sampled_data" ] && [ "$(ls -A data/sampled_data)" ]; then
+    CONT_SCRIPT=false
+elif [ -d "data/rem_user_data" ] && [ "$(ls -A data/rem_user_data)" ]; then
+    CONT_SCRIPT=false
+elif [ -d "data/train" ] && [ "$(ls -A data/train)" ]; then
+    CONT_SCRIPT=false
+elif [ -d "data/test" ] && [ "$(ls -A data/test)" ]; then
+    CONT_SCRIPT=false
+fi
 
-        cd ../utils
+if [ "$CONT_SCRIPT" = false ]; then
+    echo "------------------------------"
+    echo "Data for one of the specified preprocessing tasks has already been"
+    echo "generated. If you would like to re-generate data for this directory,"
+    echo "please delete the existing one. Located in"
+    echo "data/sampled_data, data/rem_user_data, data/train, data/test."
+    echo "Otherwise, please remove the respective tag(s) from the preprocessing command."
+    exit
+fi
 
-        # Defaults to -1 if not specified, causes script to randomly generate seed
-        SEED_ARGUMENT="${SAMPLING_SEED:--1}" 
 
-        if [ $SAMPLE = "iid" ]; then
-            LEAF_DATA_META_DIR=${META_DIR} python3 sample.py $NAMETAG --iid $IUSERTAG $SFRACTAG --seed ${SEED_ARGUMENT}
-        else
-            LEAF_DATA_META_DIR=${META_DIR} python3 sample.py $NAMETAG $SFRACTAG --seed ${SEED_ARGUMENT}
-        fi
 
-        cd ../$NAME
+# ----generate preprocessed data----
+# sample data
+if [ ! $SAMPLE = "na" ]; then
+    if [ ! -d "data/sampled_data" ]; then
+        mkdir data/sampled_data
     fi
+
+    cd ../utils
+
+    # Defaults to -1 if not specified, causes script to randomly generate seed
+    SEED_ARGUMENT="${SAMPLING_SEED:--1}"
+
+    if [ $SAMPLE = "iid" ]; then
+        LEAF_DATA_META_DIR=${META_DIR} python3 sample.py $NAMETAG --iid $IUSERTAG $SFRACTAG --seed ${SEED_ARGUMENT}
+    else
+        LEAF_DATA_META_DIR=${META_DIR} python3 sample.py $NAMETAG $SFRACTAG --seed ${SEED_ARGUMENT}
+    fi
+
+    cd ../$NAME
 fi
 
 # remove users with less then given number of samples
-if [ "$CONT_SCRIPT" = true ] && [ ! $MINSAMPLES = "na" ]; then
-    if [ -d "data/rem_user_data" ] && [ "$(ls -A data/rem_user_data)" ]; then
-        CONT_SCRIPT=false
+if [ ! $MINSAMPLES = "na" ]; then
+    if [ ! -d "data/rem_user_data" ]; then
+        mkdir data/rem_user_data
+    fi
+
+    cd ../utils
+
+    if [ -z $MINSAMPLES ]; then
+        python3 remove_users.py $NAMETAG
     else
-        if [ ! -d "data/rem_user_data" ]; then
-            mkdir data/rem_user_data
-        fi
-
-        cd ../utils
-
-        if [ -z $MINSAMPLES ]; then
-            python3 remove_users.py $NAMETAG
-        else
-            python3 remove_users.py $NAMETAG --min_samples $MINSAMPLES
-        fi
-
-        cd ../$NAME
+        python3 remove_users.py $NAMETAG --min_samples $MINSAMPLES
     fi
 fi
+
+cd ../$NAME
 
 # create train-test split
 TFRACTAG=""
@@ -212,32 +229,28 @@ if [ ! -z $TFRAC ]; then
     TFRACTAG="--frac $TFRAC"
 fi
 
-if [ "$CONT_SCRIPT" = true ] && [ ! $TRAIN = "na" ]; then
-    if [ -d "data/train" ] && [ "$(ls -A data/train)" ]; then
-        CONT_SCRIPT=false
-    else
-        if [ ! -d "data/train" ]; then
-            mkdir data/train
-        fi
-        if [ ! -d "data/test" ]; then
-            mkdir data/test
-        fi
-
-        cd ../utils
-
-        # Defaults to -1 if not specified, causes script to randomly generate seed
-        SEED_ARGUMENT="${SPLIT_SEED:--1}"
-
-        if [ -z $TRAIN ]; then
-            LEAF_DATA_META_DIR=${META_DIR} python3 split_data.py $NAMETAG $TFRACTAG --seed ${SEED_ARGUMENT}
-        elif [ $TRAIN = "user" ]; then
-            LEAF_DATA_META_DIR=${META_DIR} python3 split_data.py $NAMETAG --by_user $TFRACTAG --seed ${SEED_ARGUMENT}
-        elif [ $TRAIN = "sample" ]; then
-            LEAF_DATA_META_DIR=${META_DIR} python3 split_data.py $NAMETAG --by_sample $TFRACTAG --seed ${SEED_ARGUMENT}
-        fi
-
-        cd ../$NAME
+if [ ! $TRAIN = "na" ]; then
+    if [ ! -d "data/train" ]; then
+        mkdir data/train
     fi
+    if [ ! -d "data/test" ]; then
+        mkdir data/test
+    fi
+
+    cd ../utils
+
+    # Defaults to -1 if not specified, causes script to randomly generate seed
+    SEED_ARGUMENT="${SPLIT_SEED:--1}"
+
+    if [ -z $TRAIN ]; then
+        LEAF_DATA_META_DIR=${META_DIR} python3 split_data.py $NAMETAG $TFRACTAG --seed ${SEED_ARGUMENT}
+    elif [ $TRAIN = "user" ]; then
+        LEAF_DATA_META_DIR=${META_DIR} python3 split_data.py $NAMETAG --by_user $TFRACTAG --seed ${SEED_ARGUMENT}
+    elif [ $TRAIN = "sample" ]; then
+        LEAF_DATA_META_DIR=${META_DIR} python3 split_data.py $NAMETAG --by_sample $TFRACTAG --seed ${SEED_ARGUMENT}
+    fi
+
+    cd ../$NAME
 fi
 
 if [ -z "${NO_CHECKSUM}" ]; then
@@ -245,11 +258,4 @@ if [ -z "${NO_CHECKSUM}" ]; then
     echo "calculating JSON file checksums"
     find 'data/' -type f -name '*.json' -exec md5sum {} + | sort -k 2 > ${CHECKSUM_FNAME}
     echo "checksums written to ${CHECKSUM_FNAME}"
-fi
-
-if [ "$CONT_SCRIPT" = false ]; then
-    echo "Data for one of the specified preprocessing tasks has already been"
-    echo "generated. If you would like to re-generate data for this directory,"
-    echo "please delete the existing one. Otherwise, please remove the"
-    echo "respective tag(s) from the preprocessing command."
 fi
