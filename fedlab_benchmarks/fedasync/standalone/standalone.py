@@ -16,7 +16,7 @@ from fedlab.utils.functional import evaluate, load_dict
 
 import sys
 
-sys.path.append("../../../")
+sys.path.append("../../")
 from models.cnn import AlexNet_CIFAR10
 
 

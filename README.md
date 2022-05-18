@@ -10,6 +10,9 @@ Currently, following algorithms or benchrmarks are available：
 - [x] FedAsync: [Asynchronous Federated Optimization](http://arxiv.org/abs/1903.03934)
 - [x] FedProx: [Federated Optimization in Heterogeneous Networks](https://arxiv.org/abs/1812.06127)
 - [x] FedDyn: [Federated Learning based on Dynamic Regularization](https://openreview.net/pdf?id=B7v4QMR6Z9w)
+- [x] Personalized-FedAvg: [Improving Federated Learning Personalization via Model Agnostic Meta Learning](https://arxiv.org/pdf/1909.12488.pdf)
+- [x] qFFL: [Fair Resource Allocation in Federated Learning](https://arxiv.org/abs/1905.10497)
+- [x] FedMGDA+: [Federated Learning meets Multi-objective Optimization](https://arxiv.org/abs/2006.11489)
 
 ## Compression Algorithms
 - [x] DGC: [Deep Gradient Compression: Reducing the Communication Bandwidth for Distributed Training](https://arxiv.org/abs/1712.01887)
@@ -20,14 +23,6 @@ Currently, following algorithms or benchrmarks are available：
 - [x] NIID-Bench: [Federated Learning on Non-IID Data Silos: An Experimental Study](https://arxiv.org/abs/2102.02079)
 
 
-
-## Working list
-
-- [ ] PFL: [Debiasing Model Updates for Improving Personalized Federated Training](http://proceedings.mlr.press/v139/acar21a.html)
-- [ ] qFFL: [Fair Resource Allocation in Federated Learning](https://arxiv.org/abs/1905.10497)
-- [ ] FedMGDA+: [Federated Learning meets Multi-objective Optimization](https://arxiv.org/abs/2006.11489)
-
 ------
-
-**We highly welcome you to contribute federated learning algorithm based on FedLab. If you encounter any problems, do not hesitate to submit an issue or send an email to repo maintainers.**
+**More reproductions of FL algorithms and settings are coming. And we welcome you to contribute federated learning algorithm based on FedLab. If you encounter any problems, do not hesitate to submit an issue or send an email to repo maintainers.**
 
