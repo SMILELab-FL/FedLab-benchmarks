@@ -8,9 +8,10 @@ from fedlab.utils.dataset.sampler import RawPartitionSampler
 sys.path.append('../../')
 
 from models.cnn import CNN_CIFAR10, CNN_FEMNIST, CNN_MNIST
-from models.rnn import RNN_Shakespeare
+from models.rnn import RNN_Shakespeare, LSTMModel
 from models.mlp import MLP_CelebA
 from leaf.dataloader import get_LEAF_dataloader
+from leaf.pickle_dataset import PickleDataset
 
 def get_dataset(args):
     if args.dataset == 'mnist':
@@ -54,6 +55,9 @@ def get_dataset(args):
     elif args.dataset == 'celeba':
         trainloader, testloader = get_LEAF_dataloader(dataset=args.dataset,
                                                       client_id=args.rank)
+    elif args.dataset == 'sent140':
+        trainloader, testloader = get_LEAF_dataloader(dataset=args.dataset,
+                                                      client_id=args.rank)
     else:
         raise ValueError("Invalid dataset:", args.dataset)
 
@@ -69,6 +73,19 @@ def get_model(args):
         model = RNN_Shakespeare()
     elif args.dataset == 'celeba':
         model = MLP_CelebA()
+    elif args.dataset == 'sent140':
+        pdataset = PickleDataset(dataset_name=args.dataset, data_root=None, pickle_root=None)
+        vocab = pdataset.get_built_vocab()
+        vocab_size = vocab.num
+        embedding_dim = vocab.word_dim
+        hidden_size = 64
+        num_layers = 2
+        output_dim = 2  # number of classes
+        pad_idx = vocab.get_index('<pad>')
+        pretrained_embeddings = vocab.vectors
+
+        model = LSTMModel(vocab_size, embedding_dim, hidden_size, num_layers, output_dim, pad_idx,
+                 using_pretrained=True, embedding_weights=pretrained_embeddings, bid=True)
     else:
         raise ValueError("Invalid dataset:", args.dataset)
 

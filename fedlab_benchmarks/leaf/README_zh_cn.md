@@ -1,10 +1,10 @@
-## 【FedLab】联邦数据集benchmark leaf的使用
+# 【FedLab】联邦数据集benchmark leaf的使用
 
 FedLab将TensorFlow版本的LEAF数据集迁移到了PyTorch框架下，并提供了相应数据集的dataloader的实现脚本，统一的接口在`fedlab_benchmarks/dataset/leaf_data_process/dataloader.py`
 
 本文介绍在FedLab中leaf数据集的使用流程。
 
-### leaf数据集说明
+## LEAF数据集说明
 
 LEAF是一个模块化的基准测试框架，用于联邦设置的学习，详情可参见：
 
@@ -50,6 +50,7 @@ LEAF benchmark 包含了celeba, femnist, reddit, sent140, shakespeare, synthetic
 - **详情：** 共1,660,820位用户，总评论56,587,343条。
 - **任务：** 下一单词预测
 
+## 使用流程说明
 ### 使用leaf下载数据集
 
 为方便用户使用leaf，fedlab将leaf六类数据集的下载、处理脚本整合到`fedlab_benchmarks/datasets/data`中，该文件夹存储各类数据集的下载脚本。
@@ -82,7 +83,7 @@ bash preprocess.sh -s niid --sf 0.2 -k 0 -t sample
 # bash preprocess.sh -s iid --iu 1.0 --sf 1.0 -k 0 -t sample   # get all 1129 users
 
 cd fedlab_benchmarks/datasets/data/sent140
-bash ./preprocess.sh -s niid --sf 0.05 -k 3 -t sample
+bash ./preprocess.sh -s niid --sf 0.01 -k 3 -t sample
 
 cd fedlab_benchmarks/datasets/data/celeba
 bash ./preprocess.sh -s niid --sf 0.05 -k 5 -t sample
@@ -106,7 +107,9 @@ bash ./preprocess.sh -s niid --sf 1.0 -k 5 -t sample --tf 0.6
 
 目前FedLab的Leaf实验需要提供训练数据和测试数据，因此**需要对`preprocess.sh`提供相关的数据训练集-测试集划分参数，默认划分比例为0.9**
 
-**若需要重新获取数据或划分数据，需要先删除各数据集下的`data`文件夹再运行相关脚本进行数据下载和处理。**
+> **若需要用新的设置重新划分数据，需要先删除各数据集下`data/sampled_data`, `data/rem_user_data`, `data/train`, `data/test`文件夹，再运行该数据集对应的preprocess.sh脚本进行数据下载和处理。**
+> 
+> 如果需要重新下载原数据并进行数据读取，需要删除`data/raw_data`, `data\all_data` 以及`data/intermediate`等其他文件夹，此时再运行对应脚本文件即可重新下载并处理。
 
 ### pickle文件存储DataSet
 
@@ -132,10 +135,31 @@ test_dataset = pdataset.get_dataset_pickle(dataset_type="test", client_id="2")
 
 > 此外，可直接运行`gen_pickle_dataset.sh`脚本（位于`fedlab_benchmarks/leaf`）实现数据集实例化相应的PickleDataset对象并存储为pickle文件形式。
 ```shell
-bash gen_pickle_dataset.sh "shakespeare" "../datasets" "./pickle_datasets"
+bash gen_pickle_dataset.sh "femnist" "../datasets" "./pickle_datasets"
 ```
 其中参数1、2、3分别对应于上述的dataset_name、data_root、pickle_root。
 
+
+---
+**构建nlp数据集使用的词表补充说明：**
+
+nlp任务需要对输入的文本数据进行分词、词表映射等操作，之后传入模型进行训练、预测，其中一些操作需要使用词表。 在生成nlp数据集对应的Dataset对象时，会在指定词表位置下获取该数据集对应的词表并应用，若不存在则会在默认词表存储地址下新建对应的词表。
+
+目前，对于需要构建词表的nlp任务，FedLab在`gen_pickle_dataset.sh`脚本（位于`fedlab_benchmarks/leaf`）中封装了数据集词表生成方法。通过指定"是否生成词表"参数及其他词表相关信息参数，则可在生成Dataset对象前先完成词表构建以便后续处理。
+脚本使用样例如下：
+```shell
+cd fedlab_benchmarks/leaf/nlp_utils
+bash gen_pickle_dataset.sh "sent140" "../datasets" "./pickle_datasets" 1 './nlp_utils/dataset_vocab' './nlp_utils/glove' 50000
+```
+
+参数说明：
+1. 参数1: `dataset`, 指定要处理的leaf nlp数据集名称，有{sent140, synthetic}两种种选择。
+2. 参数2: `data_root`, 存储leaf数据集的root路径，该路径包含leaf各数据集；若使用fedlab所提供的`fedlab_benchmarks/datasets/`下载leaf数据，则`data_root`可设置为该路径，示例给出了该路径的相对地址。
+3. 参数3: `pickle_root`, 存储处理后DataSet的pickle文件地址，各数据集DataSet将另存为`{pickle_root}/{dataset_name}/{train,test}`；示例则在当前路径下创建`pickle_datasets`文件夹存储所有的pickle dataset文件。
+4. 参数4: `build_vocab`, 表示是否需要构建词表, 取值0/1
+5. 参数5: `vocab_save_root`, 存储预训练词表的位置，默认为`fedlab_benchmarks/leaf/nlp_utils/glove`，示例给出了该路径的相对地址。
+6. 参数6: `vector_save_root`, 存储生成的数据集词表位置，默认为`fedlab_benchmarks/leaf/nlp_utils/dataset_vocab`, 示例给出了该路径的相对地址。
+7. 参数7： `vocab_limit_size`, 表示生成的数据集词表最大大小，默认为50000
 
 ### dataloader加载数据集
 
@@ -157,42 +181,20 @@ def get_femnist_shakespeare_dataset(args):
     return trainloader, testloader
 ```
 
----
-**nlp数据集使用的词表补充说明：**
-
-对nlp任务而言，当前大多数方法用户词表的构建采用的是集中获取所有用户训练数据进行生成，破坏了联邦学习的原始数据不可得的原则和隐私性。
-
-目前FedLab中对于需要构建词表的nlp任务采用的是抽样部分客户端，用这些客户端数据进行词表构建，是一种简单但能一定程度维持联邦用户数据不可得特性的方法。目前本团队已在对联邦nlp中该问题进行研究。
-
-**对于需要构建词表的nlp任务，在使用所存储的PickleDataset对象之前需要先运行`build_vocab.sh`生成vocab便于后续处理（位于`fedlab_benchmarks/leaf/nlp_utils`），脚本使用样例如下：**
-```shell
-cd fedlab_benchmarks/leaf/nlp_utils
-bash build_vocab.sh "../../datasets" "shakespeare" 0.25 30000 "./dataset_vocab"
-```
-
-参数说明：
-1. 参数1: data_root, 表示用户原始数据存储的根目录，本框架中默认采用的是'fedlab_benchmarks/datasets'存储各类数据集的原始数据
-2. 参数2：dataset，表示nlp任务对应的数据集名称
-3. 参数3：data_select_ratio，表示抽样客户端参与词表构建的比例
-4. 参数4：vocab_limit_size，表示词表的最大数量额度，限制词表大小
-5. 参数5：save_root，表示所构建词表存储的目录位置，如需使用所构建的词表，应调用`get_built_vocab(save_root,dataset)`（位于fedlab_benchmarks/leaf/nlp_utils/sample_build_vocab.py）提供该路径获取
-
 之后**将在leaf的数据集接口（dataloader.py）被调用时获取相应的vocab传递给对应数据集的PickleDataset实例化对象进行词表处理**，以下给出相关示例（位于fedlab_benchmarks/leaf/dataloader.py）：
 ```python
-pdataset = PickleDataset(pickle_root="./pickle_datasets", dataset_name=dataset)
-trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
-testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
-
-# get vocab and index data
-if dataset == 'sent140':
-    vocab = get_built_vocab(dataset)
-    trainset.token2seq(vocab, maxlen=300)
-    testset.token2seq(vocab, maxlen=300)
+# Need to run leaf/gen_pickle_dataset.sh to generate pickle files for this dataset firstly
+pdataset = PickleDataset(dataset_name=dataset, data_root=data_root, pickle_root=pickle_root)
+try:
+    trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
+    testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
+except FileNotFoundError:
+    print(f"No dataset pickle files for {dataset} in {pdataset.pickle_root.resolve()}")
 ```
 
 ### 运行实验
 
-当前LEAF数据集所进行的实验为FedAvg的cross machine下的**单机多进程**场景，目前已完成femnist和shakespeare两类数据集的测试。
+当前LEAF数据集所进行的实验为FedAvg的cross machine下的**单机多进程**场景，目前已完成femnist, shakespeare, sent140, celeba四类数据集的测试。
 
 通过运行`fedlab_benchmarks/fedavg/cross_machine/LEAF_test.sh`可快速执行LEAF数据集下FedAvg的模拟实验。
 

@@ -15,11 +15,13 @@
 """
     get dataloader for dataset in LEAF processed
 """
-
+import logging
+from pathlib import Path
 import torch
 from torch.utils.data import ConcatDataset
 from leaf.pickle_dataset import PickleDataset
-from leaf.nlp_utils.sample_build_vocab import get_built_vocab
+
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 
 def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128, data_root: str = None, pickle_root: str = None):
@@ -39,18 +41,16 @@ def get_LEAF_dataloader(dataset: str, client_id=0, batch_size=128, data_root: st
     Examples:
         trainloader, testloader = get_LEAF_dataloader(dataset='shakespeare', client_id=1)
     """
-    # get vocab and index data
-
+    # Need to run leaf/gen_pickle_dataset.sh to generate pickle files for this dataset firstly
     pdataset = PickleDataset(dataset_name=dataset, data_root=data_root, pickle_root=pickle_root)
-    trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
-    testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
-
-    # get vocab and index data
-
-    if dataset == 'sent140':
-        vocab = get_built_vocab(dataset)
-        trainset.token2seq(vocab, maxlen=300)
-        testset.token2seq(vocab, maxlen=300)
+    try:
+        trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
+        testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
+    except FileNotFoundError:
+        logging.error(f"""
+                        No built PickleDataset json file for {dataset}-client {client_id} in {pdataset.pickle_root.resolve()}
+                        Please run `{BASE_DIR / 'leaf/gen_pickle_dataset.sh'} to generate {dataset} pickle files firstly!` 
+                        """)
 
     trainloader = torch.utils.data.DataLoader(
         trainset,
@@ -79,13 +79,14 @@ def get_LEAF_all_test_dataloader(dataset: str, batch_size=128, data_root: str = 
         ConcatDataset for all clients' test dataset
     """
     pdataset = PickleDataset(dataset_name=dataset, data_root=data_root, pickle_root=pickle_root)
-    all_testset = pdataset.get_dataset_pickle(dataset_type="test")
 
-    # get vocab and index data
-    if dataset == 'sent140':
-        vocab = get_built_vocab(dataset)
-        all_testset.token2seq(vocab, maxlen=300)
-
+    try:
+        all_testset = pdataset.get_dataset_pickle(dataset_type="test")
+    except FileNotFoundError:
+        logging.error(f"""
+                        No built test PickleDataset json file for {dataset} in {pdataset.pickle_root.resolve()}
+                        Please run `{BASE_DIR / 'leaf/gen_pickle_dataset.sh'} to generate {dataset} pickle files firstly!` 
+                        """)
     test_loader = torch.utils.data.DataLoader(
                     all_testset,
                     batch_size=batch_size,

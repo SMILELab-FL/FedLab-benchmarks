@@ -9,9 +9,7 @@ if [ ! -f 'glove.6B.300d.txt' ]; then
 
     if [ ! -d ./glove  ];then
       mkdir glove
-    else
-      echo glove dir exist
     fi
     mv glove.6B.300d.txt ./glove
-    echo download glove.6B.300d.txt successfully
+    echo "download glove.6B.300d.txt successfully"
 fi
