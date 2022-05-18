@@ -52,7 +52,7 @@ class RNN_Shakespeare(nn.Module):
 
 class LSTMModel(nn.Module):
     def __init__(self,
-                 vocab_size, embedding_dim, hidden_size, num_layers, output_dim,
+                 vocab_size, embedding_dim, hidden_size, num_layers, output_dim, pad_idx=0,
                  using_pretrained=False, embedding_weights=None, bid=False):
         """Creates a RNN model using LSTM layers providing embedding_weights to pretrain
 
@@ -62,6 +62,7 @@ class LSTMModel(nn.Module):
             hidden_size (int): the size of hidden layer, e.g. `256`
             num_layers (int): the number of recurrent layers, e.g. `2`
             output_dim (int): the dimension of output, e.g. `10`
+            pad_idx (int): the index of pad_token
             using_pretrained (bool, optional): if use embedding vector to pretrain model, set `True`, defaults to `False`
             embedding_weights (torch.Tensor, optional): vectors to pretrain model, defaults to `None`
             bid (bool, optional): if use bidirectional LSTM model, set `True`, defaults to `False`
@@ -72,11 +73,12 @@ class LSTMModel(nn.Module):
         super(LSTMModel, self).__init__()
         self.embeddings = nn.Embedding(num_embeddings=vocab_size,
                                        embedding_dim=embedding_dim,
-                                       padding_idx=0)
+                                       padding_idx=pad_idx)
         if using_pretrained:
             assert embedding_weights.shape[0] == vocab_size
             assert embedding_weights.shape[1] == embedding_dim
             self.embeddings.from_pretrained(embedding_weights)
+            # self.embedding.weight.data.copy_(embedding_weights)
 
         self.dropout = nn.Dropout(0.5)
         self.encoder = nn.LSTM(

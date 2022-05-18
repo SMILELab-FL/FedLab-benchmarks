@@ -6,7 +6,7 @@ This markdown file introduces the process of using LEAF dataset in FedLab.
 
 Read this in another language: [简体中文](./README_zh_cn.md).
 
-### description of Leaf datasets
+## Description of LEAF datasets
 
 The LEAF benchmark contains the federation settings of Celeba, femnist, Reddit, sent140, shakespeare and synthetic datasets. With reference to [leaf-readme.md](https://github.com/talwalkarlab/leaf) , the introduction the total number of users and the corresponding task categories of leaf datasets are given below.
 
@@ -46,6 +46,8 @@ The LEAF benchmark contains the federation settings of Celeba, femnist, Reddit, 
 - **Details:** 1,660,820 users with a total of 56,587,343 comments.
 - **Task:** Next-word Prediction.
 
+
+## Usage Flow
 ### Download and preprocess data
 
 > For the six types of leaf datasets, refer to [leaf/data](https://github.com/talwalkarlab/leaf/tree/master/data) and provide data download and preprocessing scripts in `fedlab _ benchmarks/datasets/data`.
@@ -80,7 +82,7 @@ bash preprocess.sh -s niid --sf 0.2 -k 0 -t sample
 # bash preprocess.sh -s iid --iu 1.0 --sf 1.0 -k 0 -t sample   # get all 1129 users
 
 cd fedlab_benchmarks/datasets/data/sent140
-bash ./preprocess.sh -s niid --sf 0.05 -k 3 -t sample
+bash ./preprocess.sh -s niid --sf 0.01 -k 3 -t sample
 
 cd fedlab_benchmarks/datasets/data/celeba
 bash ./preprocess.sh -s niid --sf 0.05 -k 5 -t sample
@@ -103,10 +105,11 @@ By setting parameters for `preprocess.sh`, the original data can be sampled and 
    It can be used to control the number of preprocessed users in i.i.d. sampling. 
    For example, the total number of users is 3500 in FEMNIST. We can use `--iu=0.01` to set the total number of users 35 in i.i.d. sampling . And sampled data will be allocated to these 35 users.
 
-
 At present, FedLab's Leaf experiment need provided training data and test data, so **we needs to provide related data training set-test set splitting parameter for `preprocess.sh`** to carry out the experiment, default is 0.9.
 
-**If you need to obtain or split data again, make sure to delete `data` folder in the dataset directory before re-running `preprocess.sh` to download and preprocess data.**
+> If you need to re-divide data with other settings, delete the 'data/sampled_data', 'data/rem_user_data', 'data/train', 'data/test' folders in each dataset's folder. Then run the `preprocess.sh` script (located in the corresponding dataset) for downloading and processing. **
+> 
+> If you need to re-download the original data and read the data, you need to delete other folders such as `data/raw_data`, `data\all_data` and `data/intermediate`, and then run the corresponding `preprocess.sh` script file to re-download and process again.
 
 ### pickle file stores DataSet.
 In order to speed up developers' reading data, fedlab provides a method of processing raw data into DataSet and storing it as a pickle file. The DataSet of the corresponding data of each client can be obtained by reading the pickle file after data processing.
@@ -131,9 +134,33 @@ Parameter Description:
 
 > Besides, you can directly run the `gen_pickle_dataset.sh` script (located in `fedlab_benchmarks/leaf`) to instantiate the corresponding PickleDataset object for the dataset and store it as a pickle file.
 ```shell
-bash gen_pickle_dataset.sh "shakespeare" "../datasets" "./pickle_datasets"
+bash gen_pickle_dataset.sh "femnist" "../datasets" "./pickle_datasets"
 ```
 And parameters 1, 2, and 3 correspond to dataset_name, data_root, and pickle_root respectively.
+
+---
+**Supplementary instruction of the vocabulary used by the nlp dataset:**
+
+NLP tasks need to perform operations such as word tokenization and word vocabulary mapping on the input text data, and then pass in the model for training and prediction. Some operations need to use word lists.
+When a Dataset object corresponding to an NLP Dataset is generated, the Vocab Object corresponding to the dataset is obtained at the specified location and applied. If the Vocab does not exist, it will be created in the default address.
+
+Currently, for NLP tasks that require vocabulary to be constructed, FedLab wraps the dataset vocabulary generation method in the `gen_pickle_dataset. sh` script (located in `fedlab_benchmarks /leaf`).
+By specifying the parameter `build_vocab` representing whether to build vocab and other vocab-related parameters, the vocab construction can be completed before the Dataset object is generated for subsequent processing.
+
+The following is an example of script usage:
+```shell
+cd fedlab_benchmarks/leaf/nlp_utils
+bash gen_pickle_dataset.sh "sent140" "../datasets" "./pickle_datasets" 1 './nlp_utils/dataset_vocab' './nlp_utils/glove' 50000
+```
+
+Parameter Description:
+1. Parameter 1: `dataset`, Specify the name of the leaf data set to be processed. There are six options {sent140, reddit}.
+2. Parameter 2: `data_root`, representing the root path for storing leaf data sets, which contains leaf data sets. If you use the `fedlab_benchmarks/datasets/` provided by fedlab to download leaf data, then `data_root` can be set to this path. The example shows the relative address of this path.
+3. Parameter 2: `pickle_root`, storing the pickle file storge address of the processed DataSet, each data set _DataSet_ will be saved as `{pickle_root}/{dataset_name}/{train,test}`. The example is to create a `pickle_datasets` folder under the current path to store all pickle dataset files.
+4. Parameter 4: `build_vocab`: representing whether the vocabulary needs to be constructed. The value is 0/1
+5. Parameter 5: `vocab_save_root`, representing the location where the pretrained table is stored, default to `fedlab_benchmarks/leaf/nlp_utils/glove`. The example shows the relative address of this path.
+6. Parameter 6: `vector_save_root`, storing the location of the generated dataset vocabulary, defaulting to `fedlab_benchmarks/leaf/nlp_utils/dataset_vocab`. The example shows the relative address of this path.
+7. Parameter 7: `vocab_limit_size`, represents the maximum amount of the vocabulary, which limits the size of the vocabulary. Default to 50000
 
 
 ### dataloader loading data set
@@ -157,44 +184,21 @@ def get_femnist_shakespeare_dataset(args):
 ```
 
 
----
-**Supplementary instruction of the vocabulary used by the nlp dataset:**
-
-For NLP task, most of the current methods for the construction of user vocabulary are to obtain all users' training data centrally for generation, which destroys the principle and privacy of non-availability of original data and privacy of federated learning.
-
-Currently, FedLab uses a way to saple some clients and use their data to build vocabulary for the NLP tasks that needs a user-built vocabulary, which is a simple and not private strictly method, but it can maintain the unavailability of federated user data to a certain extent than centrally use all clients' data.
-At present, our team has been researching this problem in the federated NLP.
-
-**For nlp tasks that need to build a vocabulary, you need to run `build_vocab.sh` to generate vocab (located in `fedlab_benchmarks/leaf/nlp_utils`) before instantiating the `PickleDataset` object. The script usage example is as follows:**
-```shell
-cd fedlab_benchmarks/leaf/nlp_utils
-bash build_vocab.sh "../../datasets" "shakespeare" 0.25 30000 "./dataset_vocab"
-```
-Parameter Description:
-1. Parameter 1: data_root, represents the root directory of the user's original data storage, the default in FedLab framework is 'fedlab_benchmarks/datasets', which stores the original data of various datasets
-2. Parameter 2: dataset, represents the name of the dataset corresponding to the nlp task.
-3. Parameter 3: data_select_ratio, represents the proportion of sampling clients participating in vocabulary building
-4. Parameter 4: vocab_limit_size, represents the maximum amount of the vocabulary, which limits the size of the vocabulary
-5. Parameter 5: save_root, represents the directory location where the built vocabulary is stored. If you need to use the built vocabulary, you should call `get_built_vocab(save_root,dataset)` (located in fedlab_benchmarks/leaf/nlp_utils/sample_build_vocab.py) to provide the path to obtain
-
 After that, when the dataset interface of leaf is called (dataloader.py), the corresponding vocab will be obtained and passed to the PickleDataset instantiation object of the corresponding dataset for vocabulary processing.
 The relevant example is given below (located in fedlab_benchmarks/leaf/dataloader.py) :
 
 ```python
-pdataset = PickleDataset(pickle_root="./pickle_datasets", dataset_name=dataset)
-trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
-testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
-
-# get vocab and index data
-if dataset == 'sent140':
-    vocab = get_built_vocab(dataset)
-    trainset.token2seq(vocab, maxlen=300)
-    testset.token2seq(vocab, maxlen=300)
+# Need to run leaf/gen_pickle_dataset.sh to generate pickle files for this dataset firstly
+pdataset = PickleDataset(dataset_name=dataset, data_root=data_root, pickle_root=pickle_root)
+try:
+    trainset = pdataset.get_dataset_pickle(dataset_type="train", client_id=client_id)
+    testset = pdataset.get_dataset_pickle(dataset_type="test", client_id=client_id)
+except FileNotFoundError:
+    print(f"No dataset pickle files for {dataset} in {pdataset.pickle_root.resolve()}")
 ```
-
 
 ### Run experiment
 
-The current experiment of LEAF data set is the **single-machine multi-process** scenario under FedAvg's Cross machine implement, and the tests of femnist and Shakespeare data sets have been completed.
+The current experiment of LEAF data set is the **single-machine multi-process** scenario under FedAvg's Cross machine implement, and the tests of femnist, shakespeare, sent140, celeba datasets have been completed.
 
 Run `fedlab_benchmarks/fedavg/cross_machine/LEAF_test.sh' to quickly execute the simulation experiment of fedavg under leaf data set.
