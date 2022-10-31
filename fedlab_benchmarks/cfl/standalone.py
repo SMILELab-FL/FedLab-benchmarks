@@ -158,8 +158,8 @@ if __name__ == "__main__":
     parser.add_argument("--EPS_2", type=float, default=1.0)
     parser.add_argument("--warm_round", type=int, default=20)
 
-    parser.add_argument("--dataset", type=str, default="mnist")
-    parser.add_argument("--augment", type=str, default="shifted")
+    parser.add_argument("--dataset", type=str, default="emnist")
+    parser.add_argument("--augment", type=str, default="rotated")
     parser.add_argument("--process_data", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
 
@@ -180,6 +180,8 @@ if __name__ == "__main__":
         model = MLP(input_size=28*28, output_size=10)
     elif args.dataset == "cifar10":
         model = CNN_CIFAR10()
+    elif args.dataset == "emnist":
+        model = CNN_FEMNIST()
 
     trainer = CFLTrainer(model, args, cuda=True)
 
