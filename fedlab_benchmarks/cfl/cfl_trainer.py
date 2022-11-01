@@ -17,7 +17,7 @@ class CFLTrainer(SerialTrainer):
                                          pickle_root=args.save_dir)
             self.weights = [len(self.dataset.get_dataset_pickle("train", i)) for i in range(self.client_num)]
 
-        elif self.args.dataset == "mnist" or self.args.dataset == "cifar10":
+        elif self.args.dataset == "mnist" or self.args.dataset == "cifar10" or self.args.dataset == 'emnist':
             self.client_num = self.args.n
             if self.args.augment == 'shifted':
                 self.dataset = ShiftedPartitioner(root=args.root, save_dir=args.save_dir,
@@ -27,8 +27,12 @@ class CFLTrainer(SerialTrainer):
                                                   dataset_name=self.args.dataset)
             if self.args.process_data == 1:
                 print("---Process data---")
-                self.dataset.pre_process(shards=self.client_num // 4)
+                if self.args.dataset == 'emnist' and self.args.augment == 'rotated':
+                    self.dataset.pre_process(thetas=[0, 180], shards=self.client_num // 2)
+                else:
+                    self.dataset.pre_process(shards=self.client_num // 4)
                 print("---Process data end---")
+
             self.weights = [len(self.dataset.get_dataset(i, "train")) for i in range(self.client_num)]
 
     def _get_dataloader(self, client_id):
@@ -38,17 +42,22 @@ class CFLTrainer(SerialTrainer):
                 trainset,
                 batch_size=self.args.batch_size,
                 drop_last=False)
-        elif self.args.dataset == "mnist" or self.args.dataset == "cifar10":
+        elif self.args.dataset == "mnist" or self.args.dataset == "cifar10" or self.args.dataset == 'emnist':
             data_loader = self.dataset.get_data_loader(client_id, batch_size=self.args.batch_size, type="train")
 
         return data_loader
 
     def get_testloader(self, client_id):
-        if self.args.dataset == "mnist" or self.args.dataset == "cifar10":
+        if self.args.dataset == 'emnist' and self.args.augment == 'rotated':
+            id = int(client_id / (self.client_num // 2))
+        elif self.args.dataset == "mnist" or self.args.dataset == "cifar10" or self.args.dataset == 'emnist':
             id = int(client_id / (self.client_num // 4))
-            dataset = self.dataset.get_dataset(id, type='test')
-            data_loader = self.dataset.get_data_loader(id, batch_size=4096, type="test")
-            return len(dataset), data_loader
+        else:
+            raise ValueError(f"args.dataset={self.args.dataset} is not supported to get testloader.")
+
+        dataset = self.dataset.get_dataset(id, type='test')
+        data_loader = self.dataset.get_data_loader(id, batch_size=4096, type="test")
+        return len(dataset), data_loader
 
     def local_process(self, id_list, model_parameters):
         updates, dWs = [], []

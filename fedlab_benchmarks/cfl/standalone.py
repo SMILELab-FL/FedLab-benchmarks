@@ -5,7 +5,6 @@ import sys
 import torch
 
 
-
 sys.path.append("../../")
 
 import numpy as np
@@ -19,6 +18,8 @@ from fedlab_benchmarks.models.cnn import CNN_CIFAR10, CNN_FEMNIST
 from fedlab_benchmarks.models.mlp import MLP
 from fedlab_benchmarks.cfl.cfl_trainer import CFLTrainer
 from fedlab_benchmarks.leaf.dataloader import get_LEAF_all_test_dataloader
+from fedlab_benchmarks.cfl.helper import ExperimentLogger, display_train_stats
+
 
 def flatten(source):
     return torch.cat([value.flatten() for value in source.values()])
@@ -68,7 +69,8 @@ class StandaloneServer(ModelMaintainer):
                     find_cluster_content_new[count + 1] = c2
                     count += 2
 
-                    args.exp_logger.info(f'split: {rd}, cluster: {find_cluster_content_new}')
+                    self.args.exp_logger.info(f'split: {rd}, cluster: {find_cluster_content_new}')
+                    self.args.cfl_stats.log({"split": rd})
                 else:
                     find_cluster_content_new[count] = idc
                     count += 1
@@ -89,10 +91,11 @@ class StandaloneServer(ModelMaintainer):
             # test all clusters
             if (rd + 1) % 1 == 0:
                 local_acc = []
+                acc_clusters = []
                 for cluster_id, idc in self.find_cluster_content.items():
                     if self.args.dataset == 'femnist':
                         cluster_testset = ConcatDataset(
-                        [self.client_trainer.dataset.get_dataset_pickle("test", id) for id in idc])
+                            [self.client_trainer.dataset.get_dataset_pickle("test", id) for id in idc])
                         dsize = len(cluster_testset)
                         cluster_testloader = DataLoader(cluster_testset, batch_size=4096)
 
@@ -105,6 +108,7 @@ class StandaloneServer(ModelMaintainer):
                     criterion = torch.nn.CrossEntropyLoss()
                     _, acc = evaluate(model, criterion, cluster_testloader)
                     local_acc.append((acc, dsize))
+                    acc_clusters.append(acc)
                     args.exp_logger.info("Round {}, Cluster {} - Global Test acc: {:.4f}".format(rd, idc, acc))
 
                 weighted_acc = 0
@@ -115,6 +119,11 @@ class StandaloneServer(ModelMaintainer):
                 weighted_acc /= all_size
                 accuracy.append(weighted_acc)
                 args.exp_logger.info("Round: {}, weighted acc: {}".format(rd, weighted_acc))
+
+                self.args.cfl_stats.log({"acc_clusters": acc_clusters, "mean_norm": mean_norm, "max_norm": max_norm,
+                                         "rounds": rd, "clusters": [list(x) for x in self.find_cluster_content.values()]})
+
+                display_train_stats(self.args.cfl_stats, self.args.EPS_1, self.args.EPS_2, self.args.com_round)
 
     def dt_matrix(self, grad_list):
         a = b = torch.stack(grad_list, dim=0)
@@ -135,7 +144,6 @@ class StandaloneServer(ModelMaintainer):
         return torch.max(a.norm(dim=1)).item(), torch.norm(torch.mean(a, dim=0)).item()
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Standalone training example")
     # server
@@ -150,8 +158,8 @@ if __name__ == "__main__":
     parser.add_argument("--EPS_2", type=float, default=1.0)
     parser.add_argument("--warm_round", type=int, default=20)
 
-    parser.add_argument("--dataset", type=str, default="mnist")
-    parser.add_argument("--augment", type=str, default="shifted")
+    parser.add_argument("--dataset", type=str, default="emnist")
+    parser.add_argument("--augment", type=str, default="rotated")
     parser.add_argument("--process_data", type=int, default=0)
     parser.add_argument("--seed", type=int, default=0)
 
@@ -172,6 +180,8 @@ if __name__ == "__main__":
         model = MLP(input_size=28*28, output_size=10)
     elif args.dataset == "cifar10":
         model = CNN_CIFAR10()
+    elif args.dataset == "emnist":
+        model = CNN_FEMNIST()
 
     trainer = CFLTrainer(model, args, cuda=True)
 
@@ -184,6 +194,7 @@ if __name__ == "__main__":
     args.dir = dir
     args.exp_logger = Logger("CFL", "{}/{}.log".format(dir, args.dataset))
     args.exp_logger.info(str(args))
+    args.cfl_stats = ExperimentLogger()
 
     # cfl training
     print("CFL training")
