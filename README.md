@@ -2,7 +2,7 @@
 
 # FedLab-benchmarks
 
-**For future maintain and convenient organization, this repo is deprecated. We have merged all codes into the main repo [FedLab](https://github.com/SMILELab-FL/FedLab) for the latest version. **
+**For future maintain and convenient organization, this repo is deprecated. We have merged all codes into the main repo [FedLab](https://github.com/SMILELab-FL/FedLab) for the latest version.**
 
 Following algorithms or benchrmarks are available：
 
