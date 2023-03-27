@@ -1,9 +1,10 @@
 <p align="center"><img src="https://github.com/SMILELab-FL/FedLab/raw/master/docs/imgs/FedLab-logo.svg?raw=True" width=600></p>
 
 # FedLab-benchmarks
-This repo contains standard FL algorithm implementations and FL benchmarks using [FedLab](https://github.com/SMILELab-FL/FedLab). 
 
-Currently, following algorithms or benchrmarks are available：
+**For future maintain and convenient organization, this repo is deprecated. We have merged all codes into the main repo [FedLab](https://github.com/SMILELab-FL/FedLab) for the latest version. **
+
+Following algorithms or benchrmarks are available：
 
 ## Optimization Algorithms
 - [x] FedAvg: [Communication-Efficient Learning of Deep Networks from Decentralized Data](http://proceedings.mlr.press/v54/mcmahan17a/mcmahan17a.pdf)
@@ -22,7 +23,4 @@ Currently, following algorithms or benchrmarks are available：
 - [x] LEAF: [A Benchmark for Federated Settings](http://arxiv.org/abs/1812.01097)
 - [x] NIID-Bench: [Federated Learning on Non-IID Data Silos: An Experimental Study](https://arxiv.org/abs/2102.02079)
 
-
-------
-**More reproductions of FL algorithms and settings are coming. And we welcome you to contribute federated learning algorithm based on FedLab. If you encounter any problems, do not hesitate to submit an issue or send an email to repo maintainers.**
 
