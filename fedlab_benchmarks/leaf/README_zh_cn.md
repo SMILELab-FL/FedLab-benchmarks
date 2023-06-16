@@ -80,6 +80,7 @@ bash preprocess.sh -s niid --sf 0.05 -k 0 -t sample
 cd fedlab_benchmarks/datasets/data/shakespeare
 bash preprocess.sh -s niid --sf 0.2 -k 0 -t sample  
 # bash preprocess.sh -s niid --sf 1.0 -k 0 -t sample  # get 660 users (with default --tf 0.9)
+# bash preprocess.sh -s niid --sf 1.0 -k 0 -t user  # get 1129 users (with default --tf 0.9)
 # bash preprocess.sh -s iid --iu 1.0 --sf 1.0 -k 0 -t sample   # get all 1129 users
 
 cd fedlab_benchmarks/datasets/data/sent140
